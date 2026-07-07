@@ -1,0 +1,21 @@
+import path from "path"
+import fs from 'fs'
+
+export const workspacesPath = path.join(process.cwd(), '/workspaces')
+
+export const initWorkspacesDir = () => {
+    if (!fs.existsSync(workspacesPath)) {
+        fs.mkdirSync(workspacesPath)
+    }
+}
+
+export const createUserWorkspace = (username: string) => {
+    const workspacePath = path.join(workspacesPath, `/${username}`)
+    fs.mkdirSync(workspacePath)
+
+    const agentsPath = path.join(workspacePath, 'AGENTS.md')
+    fs.writeFileSync(agentsPath, '')
+
+    const toolsPath = path.join(workspacePath, '/tools')
+    fs.mkdirSync(toolsPath)
+}

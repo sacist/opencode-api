@@ -2,7 +2,7 @@ import { app } from './app.js'
 import { env } from '#config/env'
 import { logger } from '#config/logger'
 import { db } from '#config/db'
-import { initOpencode } from '#helpers/init-opencode.helper'
+import { initOpencode, opencodeServer } from '#helpers/init-opencode.helper'
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   logger.info({ port: env.PORT, env: env.NODE_ENV }, 'server.started')
@@ -14,6 +14,7 @@ const shutdown = (signal: string) => {
   server.close(() => {
     try {
       db.close()
+      opencodeServer?.close()
     } catch (err) {
       logger.error({ err }, 'db.closeError')
     }

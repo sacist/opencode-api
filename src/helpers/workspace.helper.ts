@@ -16,6 +16,9 @@ export const createUserWorkspace = (username: string) => {
     const agentsPath = path.join(workspacePath, 'AGENTS.md')
     fs.writeFileSync(agentsPath, '')
 
+    const contextPath = path.join(workspacePath, 'context.md')
+    fs.writeFileSync(contextPath, '')
+
     const toolsPath = path.join(workspacePath, '/tools')
     fs.mkdirSync(toolsPath)
 }

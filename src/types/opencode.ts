@@ -1,4 +1,4 @@
-export const enum OpencodeGoModel {
+export enum OpencodeGoModel {
     OPENAI = "opencode-go/gpt-5.1-codex",
     ANTHROPIC = "opencode-go/claude-sonnet-4-5",
     GOOGLE = "opencode-go/gemini-3-flash",

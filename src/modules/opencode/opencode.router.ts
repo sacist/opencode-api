@@ -4,4 +4,5 @@ import { authMiddleware } from '#middleware/auth.middleware'
 
 export const opencodeRouter = Router()
 
-opencodeRouter.post('/prompt', authMiddleware, opencodeController.prompt)
+opencodeRouter.post('/agent', authMiddleware, opencodeController.agent)
+opencodeRouter.post('/api', authMiddleware, opencodeController.api)

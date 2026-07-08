@@ -9,3 +9,5 @@ export enum OpencodeGoModel {
     KIMI = "opencode-go/kimi-k2.7-code",
     GROK = "opencode-go/grok-build-0.1",
 }
+
+export type messages = Array<{ role: "system" | "user"; content: string }>

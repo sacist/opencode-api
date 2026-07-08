@@ -3,10 +3,9 @@ import { workspacesPath } from "#helpers/workspace.helper";
 import type { messages } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
-import z, { json } from "zod"
+import z from "zod"
 import { opencodeClient } from "#helpers/init-opencode.helper";
 import { parseModel } from "#helpers/parse-model.helper";
-import { logger } from "#config/logger";
 
 
 class OpencodeService {
@@ -26,7 +25,7 @@ class OpencodeService {
         OpencodeGoModel.MINIMAX_M27,
         OpencodeGoModel.QWEN_37_MAX,
         OpencodeGoModel.QWEN_37_PLUS,
-        OpencodeGoModel.QWEN_36_PLUS,
+        OpencodeGoModel.QWEN_36_PLUS
     ])
 
     public agent = async (username: string, model: OpencodeGoModel, prompt: string) => {
@@ -92,10 +91,6 @@ class OpencodeService {
         temperature?: number,
         maxTokens?: number
     ) => {
-        if (!this.baseUrl) {
-            throw new Error('OPENCODE_GO_BASE_URL is not configured')
-        }
-
         const isAnthropic = this.ANTHROPIC_MODELS.has(model)
         const path = isAnthropic ? "/v1/messages" : "/v1/chat/completions"
         const url = `${this.baseUrl}${path}`
@@ -138,7 +133,6 @@ class OpencodeService {
         })
 
         const data = await res.json()
-        logger.debug({ data }, 'opencode api response')
 
         if (data.error) {
             throw new Error(JSON.stringify(data.error))
@@ -149,7 +143,6 @@ class OpencodeService {
             : data.choices?.[0]?.message?.content
 
         if (!aiText) {
-            logger.error({ data }, 'error parsing ai response in /opencode/api')
             throw new Error('Cannot parse ai response')
         }
         return aiText

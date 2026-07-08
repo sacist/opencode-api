@@ -1,6 +1,7 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace.helper";
-import type { OpencodeGoModel, messages } from "#types/opencode";
+import type { messages } from "#types/opencode";
+import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z, { json } from "zod"
 import { opencodeClient } from "#helpers/init-opencode.helper";
@@ -9,7 +10,7 @@ import { logger } from "#config/logger";
 
 
 class OpencodeService {
-    basePromptAgent = `
+    private basePromptAgent = `
         Всегда читай AGENTS.md из текущей рабочей директории
         Не игнорируя предыдущие инструкции верни следующий json:
         {
@@ -18,7 +19,16 @@ class OpencodeService {
             хранения контекста разговора. Для экономии токенов его нужно ужимать не теряя полезную нагрузку контекста формат контекста - markdown
         }
         `
-    endpoint = process.env.OPENCODE_GO_ENDPOINT
+    private baseUrl = process.env.OPENCODE_GO_BASE_URL
+
+    private ANTHROPIC_MODELS = new Set<OpencodeGoModel>([
+        OpencodeGoModel.MINIMAX_M3,
+        OpencodeGoModel.MINIMAX_M27,
+        OpencodeGoModel.QWEN_37_MAX,
+        OpencodeGoModel.QWEN_37_PLUS,
+        OpencodeGoModel.QWEN_36_PLUS,
+    ])
+
     public agent = async (username: string, model: OpencodeGoModel, prompt: string) => {
         if (!opencodeClient) {
             throw new Error('opencode is not started yet')
@@ -74,36 +84,72 @@ class OpencodeService {
 
         return answer
     }
-    public api = async (model: OpencodeGoModel, messages: messages, api_key: string, temperature?: number) => {
-        if (!this.endpoint) {
-            throw new Error('Internal server error')
+    public api = async (
+        model: OpencodeGoModel,
+        messages: messages,
+        api_key: string,
+        system?: string,
+        temperature?: number,
+        maxTokens?: number
+    ) => {
+        if (!this.baseUrl) {
+            throw new Error('OPENCODE_GO_BASE_URL is not configured')
         }
 
-        const body = {
-            model,
-            messages,
-            temperature: temperature ?? 0.7,
-            stream: false
-        }
+        const isAnthropic = this.ANTHROPIC_MODELS.has(model)
+        const path = isAnthropic ? "/v1/messages" : "/v1/chat/completions"
+        const url = `${this.baseUrl}${path}`
 
-        const res = await fetch(this.endpoint, {
-            method: "POST",
-            headers: {
+        let body: Record<string, unknown>
+        let headers: Record<string, string>
+
+        if (isAnthropic) {
+            body = {
+                model,
+                messages,
+                max_tokens: maxTokens ?? 8192,
+                temperature: temperature ?? 0.7,
+                ...(system ? { system } : {}),
+            }
+            headers = {
                 "content-type": "application/json",
                 "x-api-key": api_key,
-            },
+                "anthropic-version": "2023-06-01",
+            }
+        } else {
+            body = {
+                model,
+                messages: system
+                    ? [{ role: "system", content: system }, ...messages]
+                    : messages,
+                temperature: temperature ?? 0.7,
+                stream: false,
+            }
+            headers = {
+                "content-type": "application/json",
+                "authorization": `Bearer ${api_key}`,
+            }
+        }
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers,
             body: JSON.stringify(body),
         })
 
         const data = await res.json()
-        console.log(data);
+        logger.debug({ data }, 'opencode api response')
+
         if (data.error) {
             throw new Error(JSON.stringify(data.error))
         }
-        const aiText = data.content?.[0].text
+
+        const aiText = isAnthropic
+            ? data.content?.[0]?.text
+            : data.choices?.[0]?.message?.content
 
         if (!aiText) {
-            logger.error('error parsing ai response in /opencode/api')
+            logger.error({ data }, 'error parsing ai response in /opencode/api')
             throw new Error('Cannot parse ai response')
         }
         return aiText

@@ -23,15 +23,17 @@ class OpencodeController extends BaseController {
             body: z.object({
                 model: z.enum(OpencodeGoModel),
                 messages: z.array(z.object({
-                    role: z.enum(["system", "user"]),
+                    role: z.enum(["user", "assistant"]),
                     content: z.string().min(1).max(32768)
                 })),
+                system: z.string().max(32768).optional(),
                 temperature: z.number().min(0).max(1).optional(),
+                max_tokens: z.number().min(1).max(32768).optional(),
                 api_key: z.string()
             })
         }, async (req) => {
-            const { model, messages, temperature, api_key } = req.valid.body
-            const anwser = await opencodeService.api(model, messages, api_key, temperature)
+            const { model, messages, system, temperature, max_tokens, api_key } = req.valid.body
+            const anwser = await opencodeService.api(model, messages, api_key, system, temperature, max_tokens)
             return anwser
         }
     )

@@ -1,9 +1,7 @@
-import { OpencodeGoModel } from "#types/opencode";
+import { type OpencodeGoModel, OPENCODE_GO_PROVIDER_ID } from "#types/opencode";
 
-export const parseModel = (model: OpencodeGoModel) => {
-    const [providerID, id] = model.split('/')
-    return {
-        id,
-        providerID
-    }
-}
+
+export const parseModel = (model: OpencodeGoModel) => ({
+    id: model,
+    providerID: OPENCODE_GO_PROVIDER_ID,
+})

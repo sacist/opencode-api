@@ -137,9 +137,9 @@ class OpencodeService {
         if (data.error) {
             throw new Error(JSON.stringify(data.error))
         }
-
+        console.log(data);
         const aiText = isAnthropic
-            ? data.content?.[0]?.text
+            ? data.content.find((val: { type: string }) => val.type === "text")?.text
             : data.choices?.[0]?.message?.content
 
         if (!aiText) {

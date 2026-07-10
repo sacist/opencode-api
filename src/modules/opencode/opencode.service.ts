@@ -6,7 +6,7 @@ import fs from 'fs'
 import z from "zod"
 import getOpencodeClient from "#helpers/init-opencode.helper";
 import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
-import { createOpencodeSession } from "#helpers/create-opencode-session";
+import { createOpencodeSession } from "#helpers/create-opencode-session.helper";
 import { TextPart } from "@opencode-ai/sdk/v2";
 import { ValidationError } from "#errors/ValidationError";
 

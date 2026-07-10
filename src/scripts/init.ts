@@ -4,9 +4,10 @@ import { usersRepository } from '#repositories/UsersRepository'
 import { hashPassword } from '#helpers/password.helper'
 import { toUserPublic, UserRole } from '#modules/users/users.model'
 import { initWorkspacesDir } from "#helpers/workspace.helper";
+import { env } from '#config/env'
 
-const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = '1221'
+const ADMIN_USERNAME = env.ADMIN_USERNAME
+const ADMIN_PASSWORD = env.ADMIN_PASSWORD
 
 const main = async () => {
   const existing = usersRepository.findByUsername(ADMIN_USERNAME)

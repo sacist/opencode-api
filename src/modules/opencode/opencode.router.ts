@@ -6,3 +6,4 @@ export const opencodeRouter = Router()
 
 opencodeRouter.post('/agent', authMiddleware, opencodeController.agent)
 opencodeRouter.post('/api', authMiddleware, opencodeController.api)
+opencodeRouter.post('/agent/md', authMiddleware, opencodeController.agentMD)

@@ -7,7 +7,7 @@ type server = {
 }
 
 export let opencodeServer: server | null = null
-export let opencodeClient: OpencodeClient | null = null
+let opencodeClient: OpencodeClient | null = null
 
 export const initOpencode = async () => {
     const { server, client } = await createOpencode({ port: 8090 })
@@ -15,3 +15,12 @@ export const initOpencode = async () => {
     opencodeClient = client
     logger.info('opencode started')
 }
+
+const getOpencodeClient = (): OpencodeClient => {
+    if (!opencodeClient) {
+        throw new Error('opencode is not started yet')
+    }
+    return opencodeClient
+}
+
+export default getOpencodeClient

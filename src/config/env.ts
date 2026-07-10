@@ -15,7 +15,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DB_PATH: z.string().min(1).default('./data/dev.sqlite'),
   LOG_DIR: z.string().min(1).default('./logs'),
-  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10)
+  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
+  OPENCODE_GO_BASE_URL: z.string()
 })
 
 export const env = envSchema.parse(process.env)

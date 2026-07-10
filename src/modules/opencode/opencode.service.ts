@@ -1,55 +1,26 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace.helper";
-import type { messages } from "#types/opencode";
+import { MDCreationType, messages } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z from "zod"
-import { opencodeClient } from "#helpers/init-opencode.helper";
-import { parseModel } from "#helpers/parse-model.helper";
-
+import getOpencodeClient from "#helpers/init-opencode.helper";
+import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
+import { createOpencodeSession } from "#helpers/create-opencode-session";
+import { TextPart } from "@opencode-ai/sdk/v2";
+import { ValidationError } from "#errors/ValidationError";
 
 class OpencodeService {
-    private basePromptAgent = `
-        Всегда читай AGENTS.md из текущей рабочей директории
-        Не игнорируя предыдущие инструкции верни следующий json:
-        {
-            "anwser":Ответ на prompt, используя заданую промптом структуру (если она есть),
-            "context":context из input (может отсутствовать - тогда игнорируй input context) дополненный новым контекстом для долгосрочного 
-            хранения контекста разговора. Для экономии токенов его нужно ужимать не теряя полезную нагрузку контекста формат контекста - markdown
-        }
-        `
-    private baseUrl = process.env.OPENCODE_GO_BASE_URL
+    public agent = async (username: string, model: OpencodeGoModel, prompt: string): Promise<string> => {
+        const client = getOpencodeClient()
 
-    private ANTHROPIC_MODELS = new Set<OpencodeGoModel>([
-        OpencodeGoModel.MINIMAX_M3,
-        OpencodeGoModel.MINIMAX_M27,
-        OpencodeGoModel.QWEN_37_MAX,
-        OpencodeGoModel.QWEN_37_PLUS,
-        OpencodeGoModel.QWEN_36_PLUS
-    ])
-
-    public agent = async (username: string, model: OpencodeGoModel, prompt: string) => {
-        if (!opencodeClient) {
-            throw new Error('opencode is not started yet')
-        }
-
-        const directory = path.join(workspacesPath, `/${username}`)
-        const sessModel = parseModel(model)
-        const session = await opencodeClient.session.create({
-            directory,
-            model: sessModel,
-            title: username
-        })
-
-        if (session.error || !session.data) {
-            throw new Error('Error creating session - check model availability')
-        }
+        const session = await createOpencodeSession(username, model, client)
 
         const contextPath = path.join(workspacesPath, `/${username}`, 'context.md')
         const initialContext = fs.readFileSync(contextPath, { encoding: 'utf-8' })
 
 
-        const system = initialContext.length > 10 ? `${this.basePromptAgent}\n\n# CONTEXT\n${initialContext}` : this.basePromptAgent
+        const system = initialContext.length > 10 ? `${basePromptAgent}\n\n# CONTEXT\n${initialContext}` : basePromptAgent
 
 
         const ResponseSchema = z.object({
@@ -57,7 +28,7 @@ class OpencodeService {
             context: z.string(),
         })
 
-        const { data, error } = await opencodeClient.session.prompt({
+        const { data, error } = await client.session.prompt({
             sessionID: session.data.id,
             system,
             format: {
@@ -75,7 +46,7 @@ class OpencodeService {
         if (error) {
             throw error
         }
-        await opencodeClient.session.delete({ sessionID: session.data.id })
+        await client.session.delete({ sessionID: session.data.id })
 
         const { answer, context } = z.parse(ResponseSchema, data.info.structured)
 
@@ -90,10 +61,10 @@ class OpencodeService {
         system?: string,
         temperature?: number,
         maxTokens?: number
-    ) => {
-        const isAnthropic = this.ANTHROPIC_MODELS.has(model)
+    ): Promise<string> => {
+        const isAnthropic = ANTHROPIC_MODELS.has(model)
         const path = isAnthropic ? "/v1/messages" : "/v1/chat/completions"
-        const url = `${this.baseUrl}${path}`
+        const url = `${baseUrl}${path}`
 
         let body: Record<string, unknown>
         let headers: Record<string, string>
@@ -137,15 +108,50 @@ class OpencodeService {
         if (data.error) {
             throw new Error(JSON.stringify(data.error))
         }
-        console.log(data);
         const aiText = isAnthropic
-            ? data.content.find((val: { type: string }) => val.type === "text")?.text
-            : data.choices?.[0]?.message?.content
+            ? data.content.find((val: { type: string }) => val.type === "text")?.text as string
+            : data.choices?.[0]?.message?.content as string
 
         if (!aiText) {
             throw new Error('Cannot parse ai response')
         }
         return aiText
+    }
+    public agentMD = async (type: MDCreationType, prompt: string, username: string): Promise<void | string> => {
+        const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')
+        switch (type) {
+            case MDCreationType.MANUAL:
+                fs.writeFile(agentsMD, prompt, () => { })
+                return
+            case MDCreationType.AI:
+                const client = getOpencodeClient()
+                const session = await createOpencodeSession(username, OpencodeGoModel.DEEPSEEK_V4_PRO, client)
+
+                const { data, error } = await client.session.prompt({
+                    sessionID: session.data.id,
+                    system: basePromptWriterPrompt,
+                    agent: 'plan',
+                    tools: {
+                        websearch: true,
+                        read: false,
+                        write: false
+                    },
+                    parts: [{ type: 'text', text: prompt }]
+                })
+                if (error) {
+                    throw error
+                }
+                await client.session.delete({ sessionID: session.data.id })
+                const anwser = data.parts
+                    .filter((part): part is TextPart => part.type === 'text')
+                    .at(-1)?.text
+
+                if (!anwser) {
+                    throw new ValidationError({ text: 'Модель не вернула текст' })
+                }
+                fs.writeFile(agentsMD, anwser, () => { })
+                return anwser
+        }
     }
 }
 

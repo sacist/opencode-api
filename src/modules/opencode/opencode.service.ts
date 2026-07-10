@@ -15,44 +15,49 @@ class OpencodeService {
         const client = getOpencodeClient()
 
         const session = await createOpencodeSession(username, model, client)
-
         const contextPath = path.join(workspacesPath, `/${username}`, 'context.md')
         const initialContext = fs.readFileSync(contextPath, { encoding: 'utf-8' })
 
 
         const system = initialContext.length > 10 ? `${basePromptAgent}\n\n# CONTEXT\n${initialContext}` : basePromptAgent
 
-
         const ResponseSchema = z.object({
             answer: z.string(),
             context: z.string(),
         })
 
-        const { data, error } = await client.session.prompt({
-            sessionID: session.data.id,
-            system,
-            format: {
-                type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
-                retryCount: 3
-            },
-            agent: 'plan',
-            tools: {
-                websearch: true,
-                read: true,
-                write: false
-            },
-            parts: [{ type: "text", text: prompt }]
-        })
-        if (error) {
-            throw error
+        try {
+            const { data, error } = await client.session.prompt({
+                sessionID: session.data.id,
+                system,
+                format: {
+                    type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
+                    retryCount: 1
+                },
+                agent: 'plan',
+                tools: {
+                    websearch: true,
+                    read: true,
+                    write: false
+                },
+                parts: [{ type: "text", text: prompt }]
+            })
+            console.log(data);
+
+            if (error) {
+                throw error
+            }
+
+            const { answer, context } = z.parse(ResponseSchema, data.info.structured)
+
+            fs.writeFile(contextPath, context, () => { })
+
+            return answer
+        } catch (e) {
+            throw e
+        } finally {
+            client.session.delete({ sessionID: session.data.id })
         }
-        await client.session.delete({ sessionID: session.data.id })
-
-        const { answer, context } = z.parse(ResponseSchema, data.info.structured)
-
-        fs.writeFile(contextPath, context, () => { })
-
-        return answer
     }
     public api = async (
         model: OpencodeGoModel,
@@ -117,40 +122,45 @@ class OpencodeService {
         }
         return aiText
     }
-    public agentMD = async (type: MDCreationType, prompt: string, username: string): Promise<void | string> => {
+    public agentMD = async (type: MDCreationType, prompt: string, username: string): Promise<string> => {
         const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')
         switch (type) {
             case MDCreationType.MANUAL:
                 fs.writeFile(agentsMD, prompt, () => { })
-                return
+                return 'AGENTS.md успешно записан'
             case MDCreationType.AI:
                 const client = getOpencodeClient()
                 const session = await createOpencodeSession(username, OpencodeGoModel.DEEPSEEK_V4_PRO, client)
+                try {
+                    const { data, error } = await client.session.prompt({
+                        sessionID: session.data.id,
+                        system: basePromptWriterPrompt,
+                        agent: 'plan',
+                        tools: {
+                            websearch: true,
+                            read: false,
+                            write: false
+                        },
+                        parts: [{ type: 'text', text: prompt }]
+                    })
+                    if (error) {
+                        throw error
+                    }
+                    const anwser = data.parts
+                        .filter((part): part is TextPart => part.type === 'text')
+                        .at(-1)?.text
 
-                const { data, error } = await client.session.prompt({
-                    sessionID: session.data.id,
-                    system: basePromptWriterPrompt,
-                    agent: 'plan',
-                    tools: {
-                        websearch: true,
-                        read: false,
-                        write: false
-                    },
-                    parts: [{ type: 'text', text: prompt }]
-                })
-                if (error) {
-                    throw error
+                    if (!anwser) {
+                        throw new ValidationError({ reason: 'Модель не вернула текст' })
+                    }
+                    fs.writeFile(agentsMD, anwser, () => { })
+                    return anwser
+                } catch (e) {
+                    throw e
+                } finally {
+                    client.session.delete({ sessionID: session.data.id })
                 }
-                await client.session.delete({ sessionID: session.data.id })
-                const anwser = data.parts
-                    .filter((part): part is TextPart => part.type === 'text')
-                    .at(-1)?.text
 
-                if (!anwser) {
-                    throw new ValidationError({ text: 'Модель не вернула текст' })
-                }
-                fs.writeFile(agentsMD, anwser, () => { })
-                return anwser
         }
     }
 }

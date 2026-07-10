@@ -15,8 +15,8 @@ class OpencodeService {
         const client = getOpencodeClient()
 
         const session = await createOpencodeSession(username, model, client)
-        const contextPath = path.join(workspacesPath, `/${username}`, 'context.md')
-        const initialContext = await fs.promises.readFile(contextPath, 'utf-8')
+        const contextMD = path.join(workspacesPath, `/${username}`, 'context.md')
+        const initialContext = await fs.promises.readFile(contextMD, 'utf-8')
 
 
         const ResponseSchema = z.object({
@@ -53,7 +53,7 @@ class OpencodeService {
 
             const { answer, context } = z.parse(ResponseSchema, data.info.structured)
 
-            fs.writeFile(contextPath, context, () => { })
+            fs.writeFile(contextMD, context, () => { })
 
             return answer
         } catch (e) {
@@ -125,12 +125,16 @@ class OpencodeService {
         }
         return aiText
     }
-    public agentMD = async (type: MDCreationType, prompt: string, username: string): Promise<string> => {
+    public agentMD = async (type: MDCreationType, prompt: string, username: string, saveContext: boolean): Promise<string> => {
         const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')
+        const contextMD = path.join(workspacesPath, `/${username}`, '/context.md')
         switch (type) {
             case MDCreationType.MANUAL:
                 fs.writeFile(agentsMD, prompt, () => { })
-                return 'AGENTS.md успешно записан'
+                if (!saveContext) {
+                    fs.writeFile(contextMD, '', () => { })
+                }
+                return `AGENTS.md успешно записан. ${saveContext ? '' : 'Контекст сброшен'}`
             case MDCreationType.AI:
                 const client = getOpencodeClient()
                 const session = await createOpencodeSession(username, OpencodeGoModel.DEEPSEEK_V4_PRO, client)
@@ -157,14 +161,17 @@ class OpencodeService {
                         throw new ValidationError({ reason: 'Модель не вернула текст' })
                     }
                     fs.writeFile(agentsMD, anwser, () => { })
+                    if (!saveContext) {
+                        fs.writeFile(contextMD, '', () => { })
+                    }
                     return anwser
                 } catch (e) {
                     throw e
                 } finally {
                     client.session.delete({ sessionID: session.data.id })
                 }
-
         }
+
     }
 }
 

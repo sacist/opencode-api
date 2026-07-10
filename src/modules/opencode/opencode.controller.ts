@@ -42,13 +42,14 @@ class OpencodeController extends BaseController {
         {
             body: z.object({
                 type: z.enum(MDCreationType),
-                prompt: z.string().max(2500)
+                prompt: z.string().max(10000),
+                saveContext: z.boolean()
             })
         },
         async (req) => {
-            const { type, prompt } = req.valid.body
+            const { type, prompt, saveContext } = req.valid.body
             const username = req.user!.username
-            const anwser = await opencodeService.agentMD(type, prompt, username)
+            const anwser = await opencodeService.agentMD(type, prompt, username, saveContext)
             return anwser
         }
     )

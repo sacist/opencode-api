@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./.env:/app/.env
+      - ./opencode.json:/app/opencode.json
+      - data:/app/data
+      - ./logs:/app/logs
+      - ./workspaces:/app/workspaces
+    command: ["sh", "-c", "npm run init && npm run start"]
+    restart: unless-stopped
+
+volumes:
+  data:

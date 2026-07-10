@@ -6,7 +6,12 @@
   "scripts": {
     "init": "tsx src/scripts/init.ts",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:restart": "docker compose restart",
+    "docker:build": "docker compose build"
   },
   "imports": {
     "#config/*": "./dist/config/*.js",

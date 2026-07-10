@@ -15,6 +15,7 @@ export enum OpencodeGoModel {
 }
 
 export type messages = Array<{ role: "user" | "assistant"; content: string }>
+export type parts = { type: "text"; text: string }[]
 export const OPENCODE_GO_PROVIDER_ID = "opencode-go" as const
 
 export enum MDCreationType {

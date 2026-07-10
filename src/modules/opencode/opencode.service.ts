@@ -1,6 +1,6 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace.helper";
-import { MDCreationType, messages } from "#types/opencode";
+import { MDCreationType, messages, type parts } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z from "zod"
@@ -16,33 +16,36 @@ class OpencodeService {
 
         const session = await createOpencodeSession(username, model, client)
         const contextPath = path.join(workspacesPath, `/${username}`, 'context.md')
-        const initialContext = fs.readFileSync(contextPath, { encoding: 'utf-8' })
+        const initialContext = await fs.promises.readFile(contextPath, 'utf-8')
 
-
-        const system = initialContext.length > 10 ? `${basePromptAgent}\n\n# CONTEXT\n${initialContext}` : basePromptAgent
 
         const ResponseSchema = z.object({
             answer: z.string(),
             context: z.string(),
         })
 
+        const parts: parts = []
+        if (initialContext.length > 10) {
+            parts.push({ type: "text", text: `# CONTEXT\n${initialContext}` })
+        }
+        parts.push({ type: "text", text: prompt })
+
         try {
             const { data, error } = await client.session.prompt({
                 sessionID: session.data.id,
-                system,
+                system: basePromptAgent,
                 format: {
                     type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
-                    retryCount: 1
+                    retryCount: 2
                 },
-                agent: 'plan',
+                agent: 'agent',
                 tools: {
                     websearch: true,
                     read: true,
-                    write: false
+                    write: false,
                 },
-                parts: [{ type: "text", text: prompt }]
+                parts,
             })
-            console.log(data);
 
             if (error) {
                 throw error
@@ -135,11 +138,11 @@ class OpencodeService {
                     const { data, error } = await client.session.prompt({
                         sessionID: session.data.id,
                         system: basePromptWriterPrompt,
-                        agent: 'plan',
+                        agent: 'agent',
                         tools: {
                             websearch: true,
-                            read: false,
-                            write: false
+                            write: false,
+                            read: false
                         },
                         parts: [{ type: 'text', text: prompt }]
                     })

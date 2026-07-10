@@ -16,6 +16,20 @@ export const initOpencode = async () => {
     logger.info('opencode started')
 }
 
+export const registerOpencodeHealthCheck = () => {
+    setInterval(async () => {
+        if (!opencodeServer) {
+            return
+        }
+        try {
+            await fetch(`${opencodeServer.url}/global/health`)
+        } catch (e) {
+            opencodeServer.close()
+            initOpencode()
+        }
+    }, 5000);
+}
+
 const getOpencodeClient = (): OpencodeClient => {
     if (!opencodeClient) {
         throw new Error('opencode is not started yet')

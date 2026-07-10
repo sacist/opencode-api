@@ -2,12 +2,12 @@ import { app } from './app.js'
 import { env } from '#config/env'
 import { logger } from '#config/logger'
 import { db } from '#config/db'
-import { initOpencode, opencodeServer } from '#helpers/init-opencode.helper'
+import { opencodeServer, initOpencode, registerOpencodeHealthCheck } from '#helpers/init-opencode.helper'
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   logger.info({ port: env.PORT, env: env.NODE_ENV }, 'server.started')
 })
-initOpencode()
+
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'server.shutdown')
@@ -24,5 +24,13 @@ const shutdown = (signal: string) => {
   setTimeout(() => process.exit(1), 10000).unref()
 }
 
+const init = () => {
+  initOpencode()
+  registerOpencodeHealthCheck()
+}
+
+
 process.on('SIGINT', () => shutdown('SIGINT'))
 process.on('SIGTERM', () => shutdown('SIGTERM'))
+
+init()

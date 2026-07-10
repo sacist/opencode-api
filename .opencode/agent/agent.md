@@ -1,4 +1,4 @@
 ---
-description: Минимальный агент для opencode-server. Без дефолтного тяжёлого системного промпта plan/build.
+description: Минимальный агент для opencode-server.
 mode: primary
 ---

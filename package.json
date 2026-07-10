@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "init": "tsx src/scripts/init.ts",
-    "dev": "tsx src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "imports": {

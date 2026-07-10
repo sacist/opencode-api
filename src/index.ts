@@ -1,11 +1,11 @@
+import { env, nodeEnv } from '#config/env'
 import { app } from './app.js'
-import { env } from '#config/env'
 import { logger } from '#config/logger'
 import { db } from '#config/db'
 import { opencodeServer, initOpencode, registerOpencodeHealthCheck } from '#helpers/init-opencode.helper'
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
-  logger.info({ port: env.PORT, env: env.NODE_ENV }, 'server.started')
+  logger.info({ port: env.PORT, env: nodeEnv }, 'server.started')
 })
 
 
@@ -25,6 +25,9 @@ const shutdown = (signal: string) => {
 }
 
 const init = () => {
+  if (nodeEnv === 'auto') {
+    logger.warn('Файл .env не был создан в корне проекта, используется стандартное env')
+  }
   initOpencode()
   registerOpencodeHealthCheck()
 }

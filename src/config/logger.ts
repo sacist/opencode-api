@@ -16,17 +16,15 @@ const targets: pino.TransportTargetOptions[] = [
       mkdir: true,
       limit: { count: 14 }
     },
-    level: 'info'
-  }
-]
-
-if (env.NODE_ENV === 'development') {
-  targets.push({
+    level: 'error'
+  },
+  {
     target: 'pino-pretty',
     options: { colorize: true, translateTime: 'HH:MM:ss.l' },
     level: 'debug'
-  })
-}
+  }
+]
+
 
 const transport = pino.transport({ targets })
 

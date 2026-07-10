@@ -1,9 +1,34 @@
 import { z } from 'zod'
-import 'dotenv/config'
+import { config as loadDotenv } from 'dotenv'
+import path from 'node:path'
+import fs from 'node:fs'
 
+
+export enum NODE_ENV {
+  AUTO = 'auto',
+  PRODUCTION = 'production'
+}
+
+export let nodeEnv: NODE_ENV
+let envFile
+
+const dotEnvPath = path.resolve(process.cwd(), '.env')
+if (fs.existsSync(dotEnvPath)) {
+  nodeEnv = NODE_ENV.PRODUCTION
+  envFile = '.env'
+} else {
+  nodeEnv = NODE_ENV.AUTO
+  envFile = '.example.env'
+}
+
+
+const envPath = path.resolve(process.cwd(), envFile)
+
+if (fs.existsSync(envPath)) {
+  loadDotenv({ path: envPath })
+}
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DB_PATH: z.string().min(1).default('./data/dev.sqlite'),
   LOG_DIR: z.string().min(1).default('./logs'),

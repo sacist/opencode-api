@@ -6,4 +6,5 @@ logs
 .production.env
 .env
 workspaces
+opencode.json
 TODO

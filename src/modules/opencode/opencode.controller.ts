@@ -53,6 +53,18 @@ class OpencodeController extends BaseController {
             return anwser
         }
     )
+    public updateApiKey = this.run(
+        {
+            body: z.object({
+                api_key: z.string().min(1).max(512),
+            }),
+        },
+        async (req) => {
+            const { api_key } = req.valid.body
+            const restarted = await opencodeService.updateApiKey(api_key)
+            return restarted
+        }
+    )
 }
 
 export const opencodeController = new OpencodeController()

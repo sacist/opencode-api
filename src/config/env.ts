@@ -34,6 +34,7 @@ const envSchema = z.object({
   LOG_DIR: z.string().min(1).default('./logs'),
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
   OPENCODE_GO_BASE_URL: z.string(),
+  OPENCODE_GO_API_KEY: z.string(),
   ADMIN_USERNAME: z.string(),
   ADMIN_PASSWORD: z.string()
 })

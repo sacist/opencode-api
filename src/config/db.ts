@@ -11,7 +11,6 @@ if (dbDir && dbDir !== '.' && !fs.existsSync(dbDir)) {
 
 export const db = new Database(env.DB_PATH)
 
-db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
 
 const CREATE_USERS_SQL = `

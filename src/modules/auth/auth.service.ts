@@ -1,8 +1,8 @@
 import { usersRepository } from '#repositories/UsersRepository'
-import { hashPassword } from '#helpers/password.helper'
-import { ConflictError } from '#errors/ConflictError'
+import { hashPassword } from '#helpers/password'
+import { ConflictError } from '#errors/Conflict.error'
 import { toUserPublic, UserRole, type IUserPublic } from '#modules/users/users.model'
-import { createUserWorkspace } from '#helpers/workspace.helper'
+import { createUserWorkspace } from '#helpers/workspace'
 
 class AuthService {
   public addUser = async (username: string, password: string): Promise<IUserPublic> => {

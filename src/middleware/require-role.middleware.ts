@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { ForbiddenError } from '#errors/ForbiddenError'
+import { ForbiddenError } from '#errors/Forbidden.error'
 import { UserRole } from '#modules/users/users.model'
 
 export const requireRole = (role: UserRole) => {

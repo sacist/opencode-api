@@ -1,6 +1,6 @@
 import type { Request, Response, RequestHandler } from 'express'
 import { ZodError, type ZodTypeAny, type z } from 'zod'
-import { ValidationError } from '#errors/ValidationError'
+import { ValidationError } from '#errors/Validation.error'
 
 export interface IRequestSchemas {
   body?: ZodTypeAny
@@ -26,7 +26,7 @@ export const run = <S extends IRequestSchemas>(
     if (schemas.body) (valid as { body: unknown }).body = schemas.body.parse(req.body)
     if (schemas.query) (valid as { query: unknown }).query = schemas.query.parse(req.query)
     if (schemas.params) (valid as { params: unknown }).params = schemas.params.parse(req.params)
-    ;(req as Request & { valid: Valid<S> }).valid = valid
+      ; (req as Request & { valid: Valid<S> }).valid = valid
     const result = await handler(req as Request & { valid: Valid<S> }, res)
     res.json({ success: true, data: result ?? null })
   } catch (err) {

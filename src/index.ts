@@ -2,7 +2,7 @@ import { env, nodeEnv } from '#config/env'
 import { app } from './app.js'
 import { logger } from '#config/logger'
 import { db } from '#config/db'
-import { opencodeServer, initOpencode, registerOpencodeHealthCheck } from '#helpers/init-opencode.helper'
+import { opencodeServer, initOpencode, registerOpencodeHealthCheck } from '#helpers/init-opencode'
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   logger.info({ port: env.PORT, env: nodeEnv }, 'server.started')

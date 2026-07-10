@@ -1,7 +1,7 @@
 import { OpencodeGoModel } from "#types/opencode"
 import path from "path"
-import { parseModel } from "./parse-model.helper.js"
-import { workspacesPath } from "./workspace.helper.js"
+import { parseModel } from "./parse-model.js"
+import { workspacesPath } from "./workspace.js"
 import { OpencodeClient } from "@opencode-ai/sdk/v2"
 
 export const createOpencodeSession = async (username: string, model: OpencodeGoModel, client: OpencodeClient) => {

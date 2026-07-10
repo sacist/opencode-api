@@ -1,14 +1,14 @@
 import path from "path";
-import { workspacesPath } from "#helpers/workspace.helper";
+import { workspacesPath } from "#helpers/workspace";
 import { MDCreationType, messages, type parts } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z from "zod"
-import getOpencodeClient from "#helpers/init-opencode.helper";
+import getOpencodeClient from "#helpers/init-opencode";
 import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
-import { createOpencodeSession } from "#helpers/create-opencode-session.helper";
+import { createOpencodeSession } from "#helpers/create-opencode-session";
 import { TextPart } from "@opencode-ai/sdk/v2";
-import { ValidationError } from "#errors/ValidationError";
+import { ValidationError } from "#errors/Validation.error";
 
 class OpencodeService {
     public agent = async (username: string, model: OpencodeGoModel, prompt: string): Promise<string> => {

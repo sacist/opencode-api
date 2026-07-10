@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
-import { UnauthorizedError } from '#errors/UnauthorizedError'
+import { UnauthorizedError } from '#errors/Unauthorized.error'
 import { usersRepository } from '#repositories/UsersRepository'
-import { verifyPassword } from '#helpers/password.helper'
+import { verifyPassword } from '#helpers/password'
 
 export const authMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   try {

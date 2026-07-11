@@ -5,7 +5,7 @@ import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z, { ZodError } from "zod"
 import getOpencodeClient, { restartOpencode } from "#helpers/init-opencode";
-import { updateOpencodeGoApiKey } from "#helpers/opencode-config";
+import { loadOpencodeConfig, updateOpencodeGoApiKey } from "#helpers/opencode-config";
 import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
 import { createOpencodeSession } from "#helpers/create-opencode-session";
 import { TextPart } from "@opencode-ai/sdk/v2";
@@ -76,11 +76,16 @@ class OpencodeService {
     public api = async (
         model: OpencodeGoModel,
         messages: messages,
-        api_key: string,
+        api_key?: string,
         system?: string,
         temperature?: number,
         maxTokens?: number
     ): Promise<string> => {
+        const resolvedApiKey = api_key ?? loadOpencodeConfig().provider['opencode-go'].options.apiKey
+        if (!resolvedApiKey) {
+            throw new Error('api_key не был передан в body. В opencode.json ключ отсутствует')
+        }
+
         const isAnthropic = ANTHROPIC_MODELS.has(model)
         const path = isAnthropic ? "/v1/messages" : "/v1/chat/completions"
         const url = `${baseUrl}${path}`
@@ -98,7 +103,7 @@ class OpencodeService {
             }
             headers = {
                 "content-type": "application/json",
-                "x-api-key": api_key,
+                "x-api-key": resolvedApiKey,
                 "anthropic-version": "2023-06-01",
             }
         } else {
@@ -112,7 +117,7 @@ class OpencodeService {
             }
             headers = {
                 "content-type": "application/json",
-                "authorization": `Bearer ${api_key}`,
+                "authorization": `Bearer ${resolvedApiKey}`,
             }
         }
 

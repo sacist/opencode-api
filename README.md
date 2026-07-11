@@ -92,7 +92,9 @@ response into `context.md` (long-term memory).
 
 ### `POST /opencode/api`
 
-Stateless chat-completion proxy. Caller supplies their own `api_key`.
+Stateless chat-completion proxy. If `api_key` is omitted, the server falls
+back to the key stored in `./opencode.json` (the one set by `OPENCODE_GO_API_KEY`
+or rotated via `POST /opencode/api-key`).
 
 | Field         | Type      | Constraints                                                                              |
 |---------------|-----------|------------------------------------------------------------------------------------------|
@@ -101,7 +103,7 @@ Stateless chat-completion proxy. Caller supplies their own `api_key`.
 | `system`      | string?   | max 32768. Sent as `system` for Anthropic models, prepended otherwise.                   |
 | `temperature` | number?   | 0–1 (default `0.7`).                                                                     |
 | `max_tokens`  | number?   | 1–32768 (default `8192`).                                                                |
-| `api_key`     | string    | required. Provider key.                                                                  |
+| `api_key`     | string?   | optional. Provider key. Falls back to `./opencode.json` → `provider.opencode-go.options.apiKey` if absent. |
 
 ### `POST /opencode/agent/md`
 

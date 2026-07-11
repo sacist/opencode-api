@@ -29,7 +29,7 @@ class OpencodeController extends BaseController {
                 system: z.string().max(32768).optional(),
                 temperature: z.number().min(0).max(1).optional(),
                 max_tokens: z.number().min(1).max(32768).optional(),
-                api_key: z.string()
+                api_key: z.string().min(1).optional()
             })
         },
         async (req) => {

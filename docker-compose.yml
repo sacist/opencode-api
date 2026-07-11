@@ -5,7 +5,7 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - ./.env:/app/.env
-      - ./opencode.json:/app/opencode.json
+      - ./config:/app/config
       - data:/app/data
       - ./logs:/app/logs
       - ./workspaces:/app/workspaces

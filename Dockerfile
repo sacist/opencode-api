@@ -1,11 +1,6 @@
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
 WORKDIR /app
-
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++
 
 RUN npm install -g opencode-ai
 

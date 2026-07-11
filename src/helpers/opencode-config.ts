@@ -17,7 +17,7 @@ const OpencodeConfigSchema = z.object({
 
 export type OpencodeConfig = z.infer<typeof OpencodeConfigSchema>
 
-export const OPENCODE_CONFIG_PATH = path.resolve(process.cwd(), 'opencode.json')
+export const OPENCODE_CONFIG_PATH = path.resolve(process.cwd(), 'config', 'opencode.json')
 
 export const opencodeConfigExists = (): boolean => fs.existsSync(OPENCODE_CONFIG_PATH)
 

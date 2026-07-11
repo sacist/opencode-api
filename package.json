@@ -11,7 +11,12 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart": "docker compose restart",
-    "docker:build": "docker compose build"
+    "docker:build": "docker compose build",
+    "docker:sudo:up": "sudo docker compose up -d --build",
+    "docker:sudo:down": "sudo docker compose down",
+    "docker:sudo:logs": "sudo docker compose logs -f",
+    "docker:sudo:restart": "sudo docker compose restart",
+    "docker:sudo:build": "sudo docker compose build"
   },
   "imports": {
     "#config/*": "./dist/config/*.js",

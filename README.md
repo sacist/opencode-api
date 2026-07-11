@@ -4,7 +4,7 @@ A self-hosted REST bridge to the **OpenCode Go** model provider.
 Node.js 22 · TypeScript · Express · SQLite.
 
 **The main advantage is the cheap subscription which gives you 60$ of balance for only 5$.**
-**Token prive stays the same making it 12x cheaper than using a normal api.**
+**Token price stays the same making it 12x cheaper than using a normal api.**
 **Also it gives you opencode agentic advantages you can utilize through the api.**
 
 ## Quick start

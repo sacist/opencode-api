@@ -3,7 +3,7 @@ import { workspacesPath } from "#helpers/workspace";
 import { MDCreationType, messages, type parts } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
-import z from "zod"
+import z, { ZodError } from "zod"
 import getOpencodeClient, { restartOpencode } from "#helpers/init-opencode";
 import { updateOpencodeGoApiKey } from "#helpers/opencode-config";
 import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
@@ -65,6 +65,9 @@ class OpencodeService {
 
             return answer
         } catch (e) {
+            if (e instanceof ZodError) {
+                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель' })
+            }
             throw e
         } finally {
             client.session.delete({ sessionID: session.data.id })

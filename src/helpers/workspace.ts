@@ -11,6 +11,9 @@ export const initWorkspacesDir = () => {
 
 export const createUserWorkspace = (username: string) => {
     const workspacePath = path.join(workspacesPath, `/${username}`)
+    if (fs.existsSync(workspacePath)) {
+        return
+    }
     fs.mkdirSync(workspacePath)
 
     const agentsPath = path.join(workspacePath, 'AGENTS.md')

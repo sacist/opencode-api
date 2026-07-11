@@ -3,7 +3,7 @@ import { logger } from '#config/logger'
 import { usersRepository } from '#repositories/UsersRepository'
 import { hashPassword } from '#helpers/password'
 import { toUserPublic, UserRole } from '#modules/users/users.model'
-import { initWorkspacesDir } from "#helpers/workspace";
+import { initWorkspacesDir, createUserWorkspace } from "#helpers/workspace";
 import { env } from '#config/env'
 import { isOpencodeConfigValid, OPENCODE_CONFIG_PATH, writeOpencodeConfig, type OpencodeConfig } from '#helpers/opencode-config'
 
@@ -61,3 +61,4 @@ main().catch((err) => {
 })
 
 initWorkspacesDir()
+createUserWorkspace(ADMIN_USERNAME)

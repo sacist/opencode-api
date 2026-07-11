@@ -44,7 +44,7 @@ class OpencodeService {
                 system: basePromptAgent,
                 format: {
                     type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
-                    retryCount: 2
+                    retryCount: 3
                 },
                 agent: 'agent',
                 tools: {

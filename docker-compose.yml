@@ -5,7 +5,6 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - ./.env:/app/.env
-      - ./config:/app/config
       - data:/app/data
       - ./logs:/app/logs
       - ./workspaces:/app/workspaces

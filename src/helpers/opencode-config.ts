@@ -8,8 +8,7 @@ const OpencodeConfigSchema = z.object({
     'opencode-go': z.object({
       name: z.string().optional(),
       options: z.object({
-        apiKey: z.string(),
-        baseURL: z.string().optional(),
+        apiKey: z.string()
       }),
     }),
   }),

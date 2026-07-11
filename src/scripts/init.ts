@@ -17,7 +17,6 @@ const seedOpencodeConfig = () => {
   }
 
   const apiKey = env.OPENCODE_GO_API_KEY
-  const baseURL = env.OPENCODE_GO_BASE_URL
 
   const cfg: OpencodeConfig = {
     $schema: 'https://opencode.ai/config.json',
@@ -25,8 +24,7 @@ const seedOpencodeConfig = () => {
       'opencode-go': {
         name: 'OpenCode Go',
         options: {
-          apiKey,
-          baseURL,
+          apiKey
         },
       },
     },

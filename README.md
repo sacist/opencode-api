@@ -82,13 +82,16 @@ Create a new user (role `user`) and provision a workspace.
 
 ### `POST /opencode/agent`
 
-Agent run: reads the user's `AGENTS.md` as system context and merges the
-response into `context.md` (long-term memory).
+Agent run: reads the user's `AGENTS.md` as system context. By default the
+response is also merged into `context.md` (long-term memory). Pass
+`updateContext: false` for a faster, stateless run that skips the structured
+JSON schema and the `context.md` write.
 
-| Field    | Type   | Constraints                                                                                                |
-|----------|--------|------------------------------------------------------------------------------------------------------------|
-| `model`  | enum   | `minimax-m3` · `minimax-m2.7` · `qwen3.7-max` · `qwen3.7-plus` · `qwen3.6-plus` · `glm-5.2` · `glm-5.1` · `kimi-k2.7-code` · `kimi-k2.6` · `deepseek-v4-pro` · `deepseek-v4-flash` · `mimo-v2.5` · `mimo-v2.5-pro` |
-| `prompt` | string | 1–32768 chars                                                                                              |
+| Field           | Type    | Constraints                                                                                                |
+|-----------------|---------|------------------------------------------------------------------------------------------------------------|
+| `model`         | enum    | `minimax-m3` · `minimax-m2.7` · `qwen3.7-max` · `qwen3.7-plus` · `qwen3.6-plus` · `glm-5.2` · `glm-5.1` · `kimi-k2.7-code` · `kimi-k2.6` · `deepseek-v4-pro` · `deepseek-v4-flash` · `mimo-v2.5` · `mimo-v2.5-pro` |
+| `prompt`        | string  | 1–32768 chars                                                                                              |
+| `updateContext` | boolean | default `true`. If `false`, response is not written to `context.md` and the last text part of the model output is returned as-is. |
 
 ### `POST /opencode/api`
 
@@ -109,11 +112,11 @@ or rotated via `POST /opencode/api-key`).
 
 Write (or regenerate) the user's `AGENTS.md`.
 
-| Field         | Type    | Constraints                                                                  |
-|---------------|---------|------------------------------------------------------------------------------|
-| `type`        | enum    | `"manual"` — write `prompt` verbatim. `"ai"` — generate from `prompt`.       |
-| `prompt`      | string  | max 10000 chars.                                                             |
-| `saveContext` | boolean | if `false`, the user's `context.md` is cleared after the write.              |
+| Field          | Type    | Constraints                                                                  |
+|----------------|---------|------------------------------------------------------------------------------|
+| `type`         | enum    | `"manual"` — write `prompt` verbatim. `"ai"` — generate from `prompt`.       |
+| `prompt`       | string  | max 10000 chars.                                                             |
+| `resetContext` | boolean | default `false`. If `true`, the user's `context.md` is cleared after the write. |
 
 ### `POST /opencode/api-key` — admin
 

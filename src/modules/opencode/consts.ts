@@ -1,7 +1,6 @@
 import { OpencodeGoModel } from "#types/opencode"
 import { env } from "#config/env"
 export const basePromptAgent = `
-        Всегда читай AGENTS.md из текущей рабочей директории
         Не игнорируя предыдущие инструкции верни следующий json:
         {
             "answer":Ответ на prompt, используя заданую промптом структуру (если она есть),

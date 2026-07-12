@@ -10,7 +10,7 @@ import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } fr
 import { createOpencodeSession } from "#helpers/create-opencode-session";
 import { TextPart } from "@opencode-ai/sdk/v2";
 import { ValidationError } from "#errors/Validation.error";
-
+import { Part } from "@opencode-ai/sdk/v2";
 class OpencodeService {
     public updateApiKey = async (api_key: string) => {
         updateOpencodeGoApiKey(api_key)
@@ -19,7 +19,7 @@ class OpencodeService {
             restarted
         }
     }
-    public agent = async (username: string, model: OpencodeGoModel, prompt: string): Promise<string> => {
+    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true): Promise<string> => {
         const client = getOpencodeClient()
 
         const session = await createOpencodeSession(username, model, client)
@@ -39,31 +39,58 @@ class OpencodeService {
         parts.push({ type: "text", text: prompt })
 
         try {
-            const { data, error } = await client.session.prompt({
-                sessionID: session.data.id,
-                system: basePromptAgent,
-                format: {
-                    type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
-                    retryCount: 3
-                },
-                agent: 'agent',
-                tools: {
-                    websearch: true,
-                    read: true,
-                    write: false,
-                },
-                parts,
-            })
+            if (updateContext) {
+                const { data, error } = await client.session.prompt({
+                    sessionID: session.data.id,
+                    system: basePromptAgent,
+                    format: {
+                        type: 'json_schema', schema: z.toJSONSchema(ResponseSchema),
+                        retryCount: 3
+                    },
+                    agent: 'agent',
+                    tools: {
+                        websearch: true,
+                        read: true,
+                        write: false,
+                    },
+                    parts,
+                })
 
-            if (error) {
-                throw error
+                if (error) {
+                    throw error
+                }
+
+                const { answer, context } = z.parse(ResponseSchema, data.info.structured)
+
+                fs.writeFile(contextMD, context, () => { })
+
+                return answer
+            } else {
+                const { data, error } = await client.session.prompt({
+                    sessionID: session.data.id,
+                    agent: 'agent',
+                    tools: {
+                        websearch: true,
+                        read: true,
+                        write: false,
+                    },
+                    parts,
+                })
+
+                if (error) {
+                    throw error
+                }
+                const anwser = data.parts
+                    .filter((part): part is TextPart => part.type === 'text')
+                    .at(-1)?.text
+
+                if (!anwser) {
+                    throw new Error('Модель не вернула ответ')
+                }
+
+                return anwser
             }
 
-            const { answer, context } = z.parse(ResponseSchema, data.info.structured)
-
-            fs.writeFile(contextMD, context, () => { })
-
-            return answer
         } catch (e) {
             if (e instanceof ZodError) {
                 throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель' })
@@ -141,16 +168,16 @@ class OpencodeService {
         }
         return aiText
     }
-    public agentMD = async (type: MDCreationType, prompt: string, username: string, saveContext: boolean): Promise<string> => {
+    public agentMD = async (type: MDCreationType, prompt: string, username: string, resetContext: boolean): Promise<string> => {
         const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')
         const contextMD = path.join(workspacesPath, `/${username}`, '/context.md')
         switch (type) {
             case MDCreationType.MANUAL:
                 fs.writeFile(agentsMD, prompt, () => { })
-                if (!saveContext) {
+                if (resetContext) {
                     fs.writeFile(contextMD, '', () => { })
                 }
-                return `AGENTS.md успешно записан. ${saveContext ? '' : 'Контекст сброшен'}`
+                return `AGENTS.md успешно записан. ${resetContext ? '' : 'Контекст сброшен'}`
             case MDCreationType.AI:
                 const client = getOpencodeClient()
                 const session = await createOpencodeSession(username, OpencodeGoModel.DEEPSEEK_V4_PRO, client)
@@ -177,7 +204,7 @@ class OpencodeService {
                         throw new ValidationError({ reason: 'Модель не вернула текст' })
                     }
                     fs.writeFile(agentsMD, anwser, () => { })
-                    if (!saveContext) {
+                    if (resetContext) {
                         fs.writeFile(contextMD, '', () => { })
                     }
                     return anwser

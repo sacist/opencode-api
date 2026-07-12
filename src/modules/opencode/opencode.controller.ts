@@ -9,12 +9,13 @@ class OpencodeController extends BaseController {
             body: z.object({
                 model: z.enum(OpencodeGoModel),
                 prompt: z.string().min(1).max(32768),
+                updateContext: z.boolean().default(true)
             }),
         },
         async (req) => {
-            const { model, prompt } = req.valid.body
+            const { model, prompt, updateContext } = req.valid.body
             const username = req.user!.username
-            const anwser = await opencodeService.agent(username, model, prompt)
+            const anwser = await opencodeService.agent(username, model, prompt, updateContext)
             return anwser
         }
     )
@@ -43,13 +44,13 @@ class OpencodeController extends BaseController {
             body: z.object({
                 type: z.enum(MDCreationType),
                 prompt: z.string().max(10000),
-                saveContext: z.boolean()
+                resetContext: z.boolean().default(false)
             })
         },
         async (req) => {
-            const { type, prompt, saveContext } = req.valid.body
+            const { type, prompt, resetContext } = req.valid.body
             const username = req.user!.username
-            const anwser = await opencodeService.agentMD(type, prompt, username, saveContext)
+            const anwser = await opencodeService.agentMD(type, prompt, username, resetContext)
             return anwser
         }
     )

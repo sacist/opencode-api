@@ -3,6 +3,7 @@ import path from "path"
 import { parseModel } from "./parse-model.js"
 import { workspacesPath } from "./workspace.js"
 import { OpencodeClient } from "@opencode-ai/sdk/v2"
+import { OpencodeError } from "#errors/Opencode.error"
 
 export const createOpencodeSession = async (username: string, model: OpencodeGoModel, client: OpencodeClient) => {
     const directory = path.join(workspacesPath, `/${username}`)
@@ -14,7 +15,7 @@ export const createOpencodeSession = async (username: string, model: OpencodeGoM
     })
 
     if (session.error || !session.data) {
-        throw new Error('Error creating session - check model availability')
+        throw new OpencodeError('OPENCODE_SESSION_CREATION_ERROR', 'Ошибка создания сессии, возможно выбрана недоступная модель')
     }
     return session
 }

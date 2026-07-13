@@ -14,11 +14,15 @@ export enum OpencodeGoModel {
     MIMO_V25_PRO = "mimo-v2.5-pro",
 }
 
-export type messages = Array<{ role: "user" | "assistant"; content: string }>
-export type parts = { type: "text"; text: string }[]
+export type Messages = Array<{ role: "user" | "assistant"; content: string }>
+export type Parts = { type: "text"; text: string }[]
 export const OPENCODE_GO_PROVIDER_ID = "opencode-go" as const
 
 export enum MDCreationType {
     MANUAL = "manual",
     AI = "ai"
+}
+
+export const enum Agents { // Можно добавить своего после добавления его в .opencode/agent
+    DEFAULT = 'agent'
 }

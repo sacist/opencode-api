@@ -2,6 +2,7 @@ import { createOpencode, OpencodeClient } from "@opencode-ai/sdk/v2"
 import type { Config } from "@opencode-ai/sdk/v2"
 import { logger } from "#config/logger"
 import { loadOpencodeConfig } from "./opencode-config.js"
+import { OpencodeError } from "#errors/Opencode.error"
 
 type server = {
     url: string;
@@ -76,7 +77,7 @@ export const registerOpencodeHealthCheck = () => {
 
 const getOpencodeClient = (): OpencodeClient => {
     if (!opencodeClient) {
-        throw new Error('opencode is not started yet')
+        throw new OpencodeError("OPENCODE_START_ERROR", "opencode ещё не запущен, попробуйте снова через короткое время")
     }
     return opencodeClient
 }

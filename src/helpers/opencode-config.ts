@@ -1,3 +1,4 @@
+import { NotFoundError } from '#errors/NotFound.error'
 import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
@@ -33,7 +34,7 @@ export const isOpencodeConfigValid = (): boolean => {
 
 export const loadOpencodeConfig = (): OpencodeConfig => {
   if (!fs.existsSync(OPENCODE_CONFIG_PATH)) {
-    throw new Error(`opencode.json not found at ${OPENCODE_CONFIG_PATH}`)
+    throw new NotFoundError(undefined, `opencode.json not found at ${OPENCODE_CONFIG_PATH}`)
   }
   const raw = fs.readFileSync(OPENCODE_CONFIG_PATH, 'utf-8')
   const parsed = JSON.parse(raw)

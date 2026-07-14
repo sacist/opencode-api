@@ -120,7 +120,7 @@ class OpencodeService {
                 if (resetContext) {
                     fs.writeFile(contextMD, '', () => { })
                 }
-                return `AGENTS.md успешно записан. ${resetContext ? '' : 'Контекст сброшен'}`
+                return `AGENTS.md успешно записан. ${!resetContext ? '' : 'Контекст сброшен'}`
             case MDCreationType.AI:
                 const parts: Parts = [{ type: 'text', text: prompt }]
                 const anwser = await opencodePrompt(

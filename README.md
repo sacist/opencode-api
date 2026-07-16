@@ -31,7 +31,7 @@ PORT=3000                          # server port (also Docker HOST:CONTAINER)
 DB_PATH=./data/dev.sqlite          # SQLite database file
 LOG_DIR=./logs                     # Pino logs (daily rotation)
 BCRYPT_ROUNDS=10                   # password hashing cost (4–15)
-OPENCODE_GO_BASE_URL=https://...   # provider base URL (required)
+OPENCODE_GO_BASE_URL=https://...   # provider base URL (You should use the default value and only change if it's not working)
 OPENCODE_GO_API_KEY=sk-...         # provider API key (required)
 ADMIN_USERNAME=admin               # bootstrap admin (required)
 ADMIN_PASSWORD=1234                # bootstrap admin password (required)
@@ -41,7 +41,7 @@ ADMIN_PASSWORD=1234                # bootstrap admin password (required)
 
 `docker compose` publishes on `0.0.0.0`, so you need all three: a
 **public static IP**, a **router port-forward** (external `<PORT>` → host LAN
-IP), and a **Windows Firewall rule**:
+IP), and a **Windows Firewall rule or ufw allow port/tcp**:
 
 ```powershell
 New-NetFirewallRule -DisplayName "opencode-server" `
@@ -54,7 +54,7 @@ terminate TLS there.
 ## Authentication & response format
 
 Every request must carry `username` and `password` headers (no sessions, no
-JWT). Admin-only routes additionally check the role via `requireRole`.
+JWT). Admin-only routes such as /auth/add additionally check the role via `requireRole`.
 
 ```jsonc
 // success
@@ -144,7 +144,7 @@ type ApiReturn = {
 The `cost` field is the raw provider cost payload serialized as a JSON
 string (for `POST /opencode/agent` / `/opencode/agent/md` it comes from the
 embedded CLI; for `POST /opencode/api` it comes from the upstream response
-under `data.cost`).
+under `data.cost`). For the very low cost it may be '0'.
 
 ### `POST /opencode/api-key` — admin
 

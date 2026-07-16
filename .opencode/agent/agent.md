@@ -5,7 +5,7 @@ temperature: 0.2
 steps: 3
 permission:
   edit: deny
-  bash: deny
+  bash: allow
   webfetch: allow
   websearch: allow
   question: deny

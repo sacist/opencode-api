@@ -20,7 +20,7 @@ class OpencodeService {
             restarted
         }
     }
-    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true): Promise<string> => {
+    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true): Promise<ApiReturn> => {
         const contextMD = path.join(workspacesPath, `/${username}`, 'context.md')
         const initialContext = await fs.promises.readFile(contextMD, 'utf-8')
 
@@ -34,11 +34,13 @@ class OpencodeService {
         }
         parts.push({ type: "text", text: prompt })
         if (updateContext) {
-            const { answer, context } = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, ResponseSchema)
+            const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, ResponseSchema)
+
+            const { answer, context } = data.json
 
             fs.writeFile(contextMD, context, () => { })
 
-            return answer
+            return { usage: data.usage, text: answer }
         } else {
             const anwser = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent)
             return anwser
@@ -123,7 +125,7 @@ class OpencodeService {
         }
         return { usage, text }
     }
-    public agentMD = async (type: MDCreationType, prompt: string, username: string, resetContext: boolean): Promise<string> => {
+    public agentMD = async (type: MDCreationType, prompt: string, username: string, resetContext: boolean): Promise<ApiReturn | string> => {
         const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')
         const contextMD = path.join(workspacesPath, `/${username}`, '/context.md')
         switch (type) {
@@ -135,7 +137,7 @@ class OpencodeService {
                 return `AGENTS.md успешно записан. ${!resetContext ? '' : 'Контекст сброшен'}`
             case MDCreationType.AI:
                 const parts: Parts = [{ type: 'text', text: prompt }]
-                const anwser = await opencodePrompt(
+                const { usage, text } = await opencodePrompt(
                     username,
                     OpencodeGoModel.DEEPSEEK_V4_PRO,
                     Agents.DEFAULT,
@@ -143,13 +145,13 @@ class OpencodeService {
                     basePromptWriterPrompt
                 )
 
-                fs.writeFile(agentsMD, anwser, () => { })
+                fs.writeFile(agentsMD, text, () => { })
 
                 if (resetContext) {
                     fs.writeFile(contextMD, '', () => { })
                 }
 
-                return anwser
+                return { usage, text }
         }
     }
 }

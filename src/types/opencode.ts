@@ -15,8 +15,19 @@ export enum OpencodeGoModel {
 }
 
 export type Messages = Array<{ role: "user" | "assistant"; content: string }>
+export type Usage = {
+    input_tokens: number,
+    output_tokens: number,
+    cost: string
+}
+export type ApiReturn = {
+    usage: Usage,
+    text: string
+}
 export type Parts = { type: "text"; text: string }[]
 export const OPENCODE_GO_PROVIDER_ID = "opencode-go" as const
+
+
 
 export enum MDCreationType {
     MANUAL = "manual",

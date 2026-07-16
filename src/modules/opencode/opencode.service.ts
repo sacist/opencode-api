@@ -1,6 +1,6 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace";
-import { Agents, MDCreationType, Messages, type Parts } from "#types/opencode";
+import { Agents, ApiReturn, MDCreationType, Messages, Usage, type Parts } from "#types/opencode";
 import { OpencodeGoModel } from "#types/opencode";
 import fs from 'fs'
 import z from "zod"
@@ -10,6 +10,7 @@ import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } fr
 import { opencodePrompt } from "#helpers/opencode-prompt";
 import { ValidationError } from "#errors/Validation.error";
 import { OpencodeError } from "#errors/Opencode.error";
+import { loadavg } from "os";
 
 class OpencodeService {
     public updateApiKey = async (api_key: string) => {
@@ -50,7 +51,7 @@ class OpencodeService {
         system?: string,
         temperature?: number,
         maxTokens?: number
-    ): Promise<string> => {
+    ): Promise<ApiReturn> => {
         const resolvedApiKey = api_key ?? loadOpencodeConfig().provider['opencode-go'].options.apiKey
         if (!resolvedApiKey) {
             throw new ValidationError({ reason: 'api_key не был передан в body. В opencode.json ключ отсутствует' })
@@ -102,14 +103,25 @@ class OpencodeService {
         if (data.error) {
             throw new OpencodeError("API_ERROR", JSON.stringify(data.error))
         }
-        const aiText = isAnthropic
+        const usage: Usage = isAnthropic
+            ? {
+                input_tokens: data.usage?.input_tokens,
+                output_tokens: data.usage?.output_tokens,
+                cost: data.cost
+            }
+            : {
+                input_tokens: data.usage?.prompt_tokens,
+                output_tokens: data.usage?.completion_tokens,
+                cost: data.cost
+            }
+        const text = isAnthropic
             ? data.content.find((val: { type: string }) => val.type === "text")?.text as string
             : data.choices?.[0]?.message?.content as string
 
-        if (!aiText) {
+        if (!text) {
             throw new ValidationError({ reason: 'Модель не вернула текст' })
         }
-        return aiText
+        return { usage, text }
     }
     public agentMD = async (type: MDCreationType, prompt: string, username: string, resetContext: boolean): Promise<string> => {
         const agentsMD = path.join(workspacesPath, `/${username}`, '/AGENTS.md')

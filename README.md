@@ -93,6 +93,8 @@ JSON schema and the `context.md` write.
 | `prompt`        | string  | 1–32768 chars                                                                                              |
 | `updateContext` | boolean | default `true`. If `false`, response is not written to `context.md` and the last text part of the model output is returned as-is. |
 
+Response `data`: `{ usage, text }` — see [Response types](#response-types).
+
 ### `POST /opencode/api`
 
 Stateless chat-completion proxy. If `api_key` is omitted, the server falls
@@ -108,6 +110,8 @@ or rotated via `POST /opencode/api-key`).
 | `max_tokens`  | number?   | 1–32768 (default `8192`).                                                                |
 | `api_key`     | string?   | optional. Provider key. Falls back to `./opencode.json` → `provider.opencode-go.options.apiKey` if absent. |
 
+Response `data`: `{ usage, text }` — see [Response types](#response-types).
+
 ### `POST /opencode/agent/md`
 
 Write (or regenerate) the user's `AGENTS.md`.
@@ -117,6 +121,30 @@ Write (or regenerate) the user's `AGENTS.md`.
 | `type`         | enum    | `"manual"` — write `prompt` verbatim. `"ai"` — generate from `prompt`.       |
 | `prompt`       | string  | max 10000 chars.                                                             |
 | `resetContext` | boolean | default `false`. If `true`, the user's `context.md` is cleared after the write. |
+
+Response `data`:
+- `type: "manual"` → plain string (`"AGENTS.md успешно записан. ..."`).
+- `type: "ai"` → `{ usage, text }` — see [Response types](#response-types).
+
+### Response types
+
+```ts
+type Usage = {
+  input_tokens: number
+  output_tokens: number
+  cost: string   // JSON-serialized provider cost breakdown
+}
+
+type ApiReturn = {
+  usage: Usage
+  text: string
+}
+```
+
+The `cost` field is the raw provider cost payload serialized as a JSON
+string (for `POST /opencode/agent` / `/opencode/agent/md` it comes from the
+embedded CLI; for `POST /opencode/api` it comes from the upstream response
+under `data.cost`).
 
 ### `POST /opencode/api-key` — admin
 

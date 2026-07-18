@@ -1,8 +1,7 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace";
-import { Agents, ApiReturn, MDCreationType, Messages, OpencodeGoModel, type ImageBlock, type Usage, type Parts } from "#types/opencode";
+import { Agents, ApiReturn, MDCreationType, Messages, OpencodeGoModel, type ImageBlock, type Usage, type Parts, ApiReturnStructured } from "#types/opencode";
 import fs from 'fs'
-import z from "zod"
 import { restartOpencode } from "#helpers/init-opencode";
 import { loadOpencodeConfig, updateOpencodeGoApiKey } from "#helpers/opencode-config";
 import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } from "./consts.js";
@@ -13,6 +12,7 @@ import { anthropicImageToFilePart } from "#helpers/anthropic-image-to-file-part"
 import { anthropicBlocksToOpenAIParts } from "#helpers/anthropic-to-openai";
 import { collectAllImages, validateImages } from "#helpers/validate-images";
 import { assertSupportsVision } from "#helpers/assert-supports-vision";
+import { AnyJSONSchema } from "#helpers/validate-json-schema";
 
 class OpencodeService {
     public updateApiKey = async (api_key: string) => {
@@ -22,15 +22,17 @@ class OpencodeService {
             restarted
         }
     }
-    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true, attachments?: ImageBlock[]): Promise<ApiReturn> => {
+    public agent = async (
+        username: string,
+        model: OpencodeGoModel,
+        prompt: string,
+        updateContext: boolean = true,
+        attachments?: ImageBlock[],
+        schema?: AnyJSONSchema): Promise<ApiReturn | ApiReturnStructured> => {
 
         const contextMD = path.join(workspacesPath, `/${username}`, 'context.md')
         const initialContext = await fs.promises.readFile(contextMD, 'utf-8')
 
-        const ResponseSchema = z.object({
-            answer: z.string(),
-            context: z.string(),
-        })
         const parts: Parts = []
         if (initialContext.length > 10) {
             parts.push({ type: "text", text: `# CONTEXT\n${initialContext}` })
@@ -42,13 +44,22 @@ class OpencodeService {
             parts.push(...attachments.map(anthropicImageToFilePart))
         }
         if (updateContext) {
-            const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, ResponseSchema)
+            if (schema) {
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, true, schema)
+                const { answer, context } = data.json
 
-            const { answer, context } = data.json
+                fs.writeFile(contextMD, context, () => { })
 
-            fs.writeFile(contextMD, context, () => { })
+                return { usage: data.usage, structured: answer }
+            } else {
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, true)
 
-            return { usage: data.usage, text: answer }
+                const { answer, context } = data.json
+
+                fs.writeFile(contextMD, context, () => { })
+
+                return { usage: data.usage, text: answer }
+            }
         } else {
             const anwser = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent)
             return anwser

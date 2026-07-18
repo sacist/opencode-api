@@ -29,9 +29,14 @@ export type Usage = {
     output_tokens: number,
     cost: string
 }
+
 export type ApiReturn = {
     usage: Usage,
     text: string
+}
+export type ApiReturnStructured = {
+    usage: Usage,
+    structured: any
 }
 export type PartInput =
     | { type: "text"; text: string }

@@ -13,12 +13,13 @@ class OpencodeController extends BaseController {
                 prompt: z.string().min(1).max(32768),
                 updateContext: z.boolean().default(true),
                 attachments: z.array(imageBlockSchema).max(MAX_IMAGES).optional(),
+                schema: z.any().optional()
             }),
         },
         async (req) => {
-            const { model, prompt, updateContext, attachments } = req.valid.body
+            const { model, prompt, updateContext, attachments, schema } = req.valid.body
             const username = req.user!.username
-            return opencodeService.agent(username, model, prompt, updateContext, attachments)
+            return opencodeService.agent(username, model, prompt, updateContext, attachments, schema)
         }
     )
     public api = this.run(

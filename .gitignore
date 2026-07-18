@@ -8,3 +8,5 @@ logs
 workspaces
 opencode.json
 TODO
+src/scripts/test.ts
+*.jpg

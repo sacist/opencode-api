@@ -35,6 +35,7 @@ OPENCODE_GO_BASE_URL=https://...   # provider base URL (You should use the defau
 OPENCODE_GO_API_KEY=sk-...         # provider API key (required)
 ADMIN_USERNAME=admin               # bootstrap admin (required)
 ADMIN_PASSWORD=1234                # bootstrap admin password (required)
+MAX_IMAGE_MEGABYTES=3              # max base64 image size per attachment
 ```
 
 ## Exposing to the internet
@@ -66,6 +67,10 @@ JWT). Admin-only routes such as /auth/add additionally check the role via `requi
 Codes: `AUTH_HEADERS_MISSING` (401), `AUTH_INVALID` (401), `FORBIDDEN_ROLE` (403),
 `USER_EXISTS` (409), `VALIDATION_ERROR` (400), `INTERNAL_ERROR` (500).
 
+Request bodies are limited to **30 MB** (Express `json` limit, to fit up to 5
+base64 images × 3 MB). Malformed JSON is caught before route handlers and
+returned as `400 VALIDATION_ERROR` with `data.reason = "Вы прислали не валидный json"`.
+
 ## API reference
 
 > All endpoints require `Content-Type: application/json` + `username` /
@@ -92,6 +97,25 @@ JSON schema and the `context.md` write.
 | `model`         | enum    | `minimax-m3` · `minimax-m2.7` · `qwen3.7-max` · `qwen3.7-plus` · `qwen3.6-plus` · `glm-5.2` · `glm-5.1` · `kimi-k2.7-code` · `kimi-k2.6` · `deepseek-v4-pro` · `deepseek-v4-flash` · `mimo-v2.5` · `mimo-v2.5-pro` |
 | `prompt`        | string  | 1–32768 chars                                                                                              |
 | `updateContext` | boolean | default `true`. If `false`, response is not written to `context.md` and the last text part of the model output is returned as-is. |
+| `attachments`   | array?  | optional. Up to 5 image blocks in Anthropic format. Each ≤ 3 МБ, `image/{png,jpeg,gif,webp}`, base64. |
+
+`attachments` element:
+```jsonc
+{
+  "type": "image",
+  "source": {
+    "type": "base64",
+    "media_type": "image/png",  // image/jpeg | image/png | image/gif | image/webp
+    "data": "<base64 без префикса data:>"
+  }
+}
+```
+
+**Vision models.** Only vision-capable models can receive images. If
+`attachments` is non-empty and `model` is not vision-capable, the server
+rejects the request with `400 VALIDATION_ERROR` and the list of supported
+vision models. Currently: `minimax-m3`, `kimi-k2.6`. The list is derived
+dynamically from `src/modules/opencode/consts.ts` → `VISION_MODELS`.
 
 Response `data`: `{ usage, text }` — see [Response types](#response-types).
 
@@ -104,11 +128,30 @@ or rotated via `POST /opencode/api-key`).
 | Field         | Type      | Constraints                                                                              |
 |---------------|-----------|------------------------------------------------------------------------------------------|
 | `model`       | enum      | same enum as `/opencode/agent`.                                                          |
-| `messages`    | array     | `[{ role: "user"\|"assistant", content: string }, ...]`, each 1–32768.                   |
+| `messages`    | array     | `[{ role: "user"\|"assistant", content: string \| TextBlock[] \| ImageBlock[] }]`. String up to 32768 chars. Up to 5 image blocks total across all messages, each ≤ 3 МБ. |
 | `system`      | string?   | max 32768. Sent as `system` for Anthropic models, prepended otherwise.                   |
 | `temperature` | number?   | 0–1 (default `0.7`).                                                                     |
 | `max_tokens`  | number?   | 1–32768 (default `8192`).                                                                |
 | `api_key`     | string?   | optional. Provider key. Falls back to `./opencode.json` → `provider.opencode-go.options.apiKey` if absent. |
+
+`messages[].content` can be a plain string or an array of blocks (Anthropic
+format). Image blocks:
+```jsonc
+{ "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": "<base64>" } }
+```
+Text blocks:
+```jsonc
+{ "type": "text", "text": "..." }
+```
+For Anthropic-compatible models the array is passed through as-is. For
+OpenAI-compatible models the blocks are converted to `image_url` /
+`text` parts by the server.
+
+**Vision models.** If any `messages[i].content` contains an `image` block
+and `model` is not vision-capable, the server rejects the entire request
+with `400 VALIDATION_ERROR` and the list of supported vision models.
+Currently: `minimax-m3`, `kimi-k2.6`. The list is derived dynamically
+from `src/modules/opencode/consts.ts` → `VISION_MODELS`.
 
 Response `data`: `{ usage, text }` — see [Response types](#response-types).
 
@@ -171,11 +214,23 @@ curl -X POST http://localhost:3000/opencode/agent \
   -H "username: alice" -H "password: pa55w0rd" \
   -d '{"model":"minimax-m3","prompt":"Summarize AGENTS.md"}'
 
+# agent run with image attachments (Anthropic format, base64-encoded)
+curl -X POST http://localhost:3000/opencode/agent \
+  -H "Content-Type: application/json" \
+  -H "username: alice" -H "password: pa55w0rd" \
+  -d '{"model":"minimax-m3","prompt":"What is in these images?","attachments":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"<base64>"}}]}'
+
 # raw chat completion
 curl -X POST http://localhost:3000/opencode/api \
   -H "Content-Type: application/json" \
   -H "username: alice" -H "password: pa55w0rd" \
   -d '{"model":"qwen3.7-plus","messages":[{"role":"user","content":"hi"}],"api_key":"sk-xxx"}'
+
+# raw chat completion with image (Anthropic-format content, OpenAI-compat model)
+curl -X POST http://localhost:3000/opencode/api \
+  -H "Content-Type: application/json" \
+  -H "username: alice" -H "password: pa55w0rd" \
+  -d '{"model":"qwen3.7-plus","messages":[{"role":"user","content":[{"type":"text","text":"describe"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"<base64>"}}]}],"api_key":"sk-xxx"}'
 ```
 
 ## Scripts & storage

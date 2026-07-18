@@ -1,7 +1,6 @@
 import path from "path";
 import { workspacesPath } from "#helpers/workspace";
-import { Agents, ApiReturn, MDCreationType, Messages, Usage, type Parts } from "#types/opencode";
-import { OpencodeGoModel } from "#types/opencode";
+import { Agents, ApiReturn, MDCreationType, Messages, OpencodeGoModel, type ImageBlock, type Usage, type Parts } from "#types/opencode";
 import fs from 'fs'
 import z from "zod"
 import { restartOpencode } from "#helpers/init-opencode";
@@ -10,7 +9,10 @@ import { baseUrl, ANTHROPIC_MODELS, basePromptAgent, basePromptWriterPrompt } fr
 import { opencodePrompt } from "#helpers/opencode-prompt";
 import { ValidationError } from "#errors/Validation.error";
 import { OpencodeError } from "#errors/Opencode.error";
-import { loadavg } from "os";
+import { anthropicImageToFilePart } from "#helpers/anthropic-image-to-file-part";
+import { anthropicBlocksToOpenAIParts } from "#helpers/anthropic-to-openai";
+import { collectAllImages, validateImages } from "#helpers/validate-images";
+import { assertSupportsVision } from "./assert-supports-vision.js";
 
 class OpencodeService {
     public updateApiKey = async (api_key: string) => {
@@ -20,7 +22,8 @@ class OpencodeService {
             restarted
         }
     }
-    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true): Promise<ApiReturn> => {
+    public agent = async (username: string, model: OpencodeGoModel, prompt: string, updateContext: boolean = true, attachments?: ImageBlock[]): Promise<ApiReturn> => {
+
         const contextMD = path.join(workspacesPath, `/${username}`, 'context.md')
         const initialContext = await fs.promises.readFile(contextMD, 'utf-8')
 
@@ -33,6 +36,11 @@ class OpencodeService {
             parts.push({ type: "text", text: `# CONTEXT\n${initialContext}` })
         }
         parts.push({ type: "text", text: prompt })
+        if (attachments && attachments.length > 0) {
+            assertSupportsVision(model)
+            await validateImages(attachments)
+            parts.push(...attachments.map(anthropicImageToFilePart))
+        }
         if (updateContext) {
             const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, ResponseSchema)
 
@@ -54,6 +62,12 @@ class OpencodeService {
         temperature?: number,
         maxTokens?: number
     ): Promise<ApiReturn> => {
+        const images = collectAllImages(messages)
+        if (images.length > 0) {
+            assertSupportsVision(model)
+            await validateImages(images)
+        }
+
         const resolvedApiKey = api_key ?? loadOpencodeConfig().provider['opencode-go'].options.apiKey
         if (!resolvedApiKey) {
             throw new ValidationError({ reason: 'api_key не был передан в body. В opencode.json ключ отсутствует' })
@@ -80,11 +94,15 @@ class OpencodeService {
                 "anthropic-version": "2023-06-01",
             }
         } else {
+            const openaiMessages = messages.map(m => Array.isArray(m.content)
+                ? { role: m.role, content: anthropicBlocksToOpenAIParts(m.content) }
+                : { role: m.role, content: m.content }
+            )
             body = {
                 model,
                 messages: system
-                    ? [{ role: "system", content: system }, ...messages]
-                    : messages,
+                    ? [{ role: "system", content: system }, ...openaiMessages]
+                    : openaiMessages,
                 temperature: temperature ?? 0.7,
                 stream: false,
             }

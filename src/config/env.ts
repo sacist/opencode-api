@@ -36,7 +36,8 @@ const envSchema = z.object({
   OPENCODE_GO_BASE_URL: z.string(),
   OPENCODE_GO_API_KEY: z.string(),
   ADMIN_USERNAME: z.string(),
-  ADMIN_PASSWORD: z.string()
+  ADMIN_PASSWORD: z.string(),
+  MAX_IMAGE_MEGABYTES: z.coerce.number().int().positive()
 })
 
 export const env = envSchema.parse(process.env)

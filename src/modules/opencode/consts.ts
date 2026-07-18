@@ -20,6 +20,11 @@ export const ANTHROPIC_MODELS = new Set<OpencodeGoModel>([
     OpencodeGoModel.QWEN_36_PLUS
 ])
 
+export const VISION_MODELS = new Set<OpencodeGoModel>([
+    OpencodeGoModel.MINIMAX_M3,
+    OpencodeGoModel.KIMI_K26
+])
+
 export const basePromptWriterPrompt = `
     Ты - агент специализирующийся на написании файлов AGENTS.md. 
     Твоя основная задача написать максимально хороший AGENTS.md с минимальным кол-вом символов, используя ввод пользователя с описанием задачи.

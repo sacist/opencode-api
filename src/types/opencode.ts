@@ -14,7 +14,16 @@ export enum OpencodeGoModel {
     MIMO_V25_PRO = "mimo-v2.5-pro",
 }
 
-export type Messages = Array<{ role: "user" | "assistant"; content: string }>
+export type ImageBlock = {
+    type: "image"
+    source: { type: "base64"; media_type: string; data: string }
+}
+export type TextBlock = { type: "text"; text: string }
+export type ContentBlock = TextBlock | ImageBlock
+
+export type Message = { role: "user" | "assistant"; content: string | ContentBlock[] }
+export type Messages = Message[]
+
 export type Usage = {
     input_tokens: number,
     output_tokens: number,
@@ -24,7 +33,10 @@ export type ApiReturn = {
     usage: Usage,
     text: string
 }
-export type Parts = { type: "text"; text: string }[]
+export type PartInput =
+    | { type: "text"; text: string }
+    | { type: "file"; mime: string; filename?: string; url: string }
+export type Parts = PartInput[]
 export const OPENCODE_GO_PROVIDER_ID = "opencode-go" as const
 
 
@@ -34,6 +46,6 @@ export enum MDCreationType {
     AI = "ai"
 }
 
-export const enum Agents { // Можно добавить своего после добавления его в .opencode/agent
+export const enum Agents {
     DEFAULT = 'agent'
 }

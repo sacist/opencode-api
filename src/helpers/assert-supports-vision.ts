@@ -1,5 +1,5 @@
 import { OpencodeGoModel } from "#types/opencode"
-import { VISION_MODELS } from "./consts.js"
+import { VISION_MODELS } from "../modules/opencode/consts.js"
 import { ValidationError } from "#errors/Validation.error"
 
 export const assertSupportsVision = (model: OpencodeGoModel): void => {
@@ -7,7 +7,7 @@ export const assertSupportsVision = (model: OpencodeGoModel): void => {
     const list = Array.from(VISION_MODELS).join(", ")
     throw new ValidationError({
         issues: [{
-            code: "custom",
+            code: "invalid_value",
             path: ["model"],
             message: `Модель не поддерживает изображения. Доступные vision-модели: ${list}`
         }]

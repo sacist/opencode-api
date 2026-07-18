@@ -12,7 +12,7 @@ import { OpencodeError } from "#errors/Opencode.error";
 import { anthropicImageToFilePart } from "#helpers/anthropic-image-to-file-part";
 import { anthropicBlocksToOpenAIParts } from "#helpers/anthropic-to-openai";
 import { collectAllImages, validateImages } from "#helpers/validate-images";
-import { assertSupportsVision } from "./assert-supports-vision.js";
+import { assertSupportsVision } from "#helpers/assert-supports-vision";
 
 class OpencodeService {
     public updateApiKey = async (api_key: string) => {

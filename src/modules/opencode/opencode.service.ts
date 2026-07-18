@@ -172,7 +172,7 @@ class OpencodeService {
                 const parts: Parts = [{ type: 'text', text: prompt }]
                 const { usage, text } = await opencodePrompt(
                     username,
-                    OpencodeGoModel.DEEPSEEK_V4_PRO,
+                    OpencodeGoModel.KIMI_K26,
                     Agents.DEFAULT,
                     parts,
                     basePromptWriterPrompt

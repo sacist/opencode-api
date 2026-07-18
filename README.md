@@ -88,16 +88,20 @@ Create a new user (role `user`) and provision a workspace.
 ### `POST /opencode/agent`
 
 Agent run: reads the user's `AGENTS.md` as system context. By default the
-response is also merged into `context.md` (long-term memory). Pass
-`updateContext: false` for a faster, stateless run that skips the structured
-JSON schema and the `context.md` write.
+response is also merged into `context.md` (long-term memory) — the model
+returns a structured `{ answer, context }` JSON, and `answer` is surfaced
+to the caller. Pass `updateContext: false` for a faster, stateless run that
+skips the `context.md` write and returns the last text part of the model
+output as-is.
 
-| Field           | Type    | Constraints                                                                                                |
-|-----------------|---------|------------------------------------------------------------------------------------------------------------|
-| `model`         | enum    | `minimax-m3` · `minimax-m2.7` · `qwen3.7-max` · `qwen3.7-plus` · `qwen3.6-plus` · `glm-5.2` · `glm-5.1` · `kimi-k2.7-code` · `kimi-k2.6` · `deepseek-v4-pro` · `deepseek-v4-flash` · `mimo-v2.5` · `mimo-v2.5-pro` |
-| `prompt`        | string  | 1–32768 chars                                                                                              |
-| `updateContext` | boolean | default `true`. If `false`, response is not written to `context.md` and the last text part of the model output is returned as-is. |
-| `attachments`   | array?  | optional. Up to 5 image blocks in Anthropic format. Each ≤ 3 МБ, `image/{png,jpeg,gif,webp}`, base64. |
+| Field            | Type    | Constraints                                                                                                |
+|------------------|---------|------------------------------------------------------------------------------------------------------------|
+| `model`          | enum    | `minimax-m3` · `minimax-m2.7` · `qwen3.7-max` · `qwen3.7-plus` · `qwen3.6-plus` · `glm-5.2` · `glm-5.1` · `kimi-k2.7-code` · `kimi-k2.6` · `deepseek-v4-pro` · `deepseek-v4-flash` · `mimo-v2.5` · `mimo-v2.5-pro` |
+| `prompt`         | string  | 1–32768 chars                                                                                              |
+| `updateContext`  | boolean | default `true`. If `false`, response is not written to `context.md`. See [Response shapes](#response-shapes) for how this interacts with `schema`. |
+| `attachments`    | array?  | optional. Up to 5 image blocks in Anthropic format. Each ≤ 3 МБ, `image/{png,jpeg,gif,webp}`, base64. |
+| `schema`         | object? | optional. Any JSON Schema (draft-07 compatible). When set, the model's `answer` is validated against it and returned as `structured` instead of `text`. See [Structured output](#structured-output). |
+| `schema_retries` | number  | default `3`. How many times the provider should retry when the model output doesn't validate against `schema` (only meaningful when `schema` is set). |
 
 `attachments` element:
 ```jsonc
@@ -117,7 +121,40 @@ rejects the request with `400 VALIDATION_ERROR` and the list of supported
 vision models. Currently: `minimax-m3`, `kimi-k2.6`. The list is derived
 dynamically from `src/modules/opencode/consts.ts` → `VISION_MODELS`.
 
-Response `data`: `{ usage, text }` — see [Response types](#response-types).
+Response `data`: see [Response shapes](#response-shapes).
+
+#### Structured output
+
+Pass a JSON Schema as `schema` to force the model to return a structured
+`answer` validated against it. The schema is sent to the provider as a
+`json_schema` output format with `schema_retries` retries on validation
+failure. After the provider response comes back, the result is re-validated
+locally with Ajv; if it still doesn't match, the request fails with
+`400 VALIDATION_ERROR` and the reason `"Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель"`.
+
+```jsonc
+// example: sentiment classification
+{
+  "model": "kimi-k2.6",
+  "prompt": "Classify: 'I love this'",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sentiment": { "type": "string", "enum": ["pos", "neg", "neu"] },
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "required": ["sentiment", "confidence"],
+    "additionalProperties": false
+  },
+  "schema_retries": 3
+}
+```
+
+With `updateContext: true` (default) the structured `answer` is still
+merged into `context.md` and the caller receives the validated object as
+`structured`. With `updateContext: false` the server does not wrap the
+schema in `{ answer, context }` — the model's output is validated directly
+against `schema` and returned as `structured`.
 
 ### `POST /opencode/api`
 
@@ -153,7 +190,7 @@ with `400 VALIDATION_ERROR` and the list of supported vision models.
 Currently: `minimax-m3`, `kimi-k2.6`. The list is derived dynamically
 from `src/modules/opencode/consts.ts` → `VISION_MODELS`.
 
-Response `data`: `{ usage, text }` — see [Response types](#response-types).
+Response `data`: `{ usage, text }` — see [Response shapes](#response-shapes).
 
 ### `POST /opencode/agent/md`
 
@@ -167,9 +204,22 @@ Write (or regenerate) the user's `AGENTS.md`.
 
 Response `data`:
 - `type: "manual"` → plain string (`"AGENTS.md успешно записан. ..."`).
-- `type: "ai"` → `{ usage, text }` — see [Response types](#response-types).
+- `type: "ai"` → `{ usage, text }` — see [Response shapes](#response-shapes).
 
-### Response types
+### Response shapes
+
+`POST /opencode/agent` returns one of two shapes depending on whether
+`schema` is provided:
+
+| `updateContext` | `schema` | Response `data`                                       |
+|-----------------|----------|-------------------------------------------------------|
+| `true` (default)| absent   | `{ usage, text }` — `text` is the `answer` string     |
+| `true` (default)| set      | `{ usage, structured }` — `structured` is the `answer` validated against `schema` (context is still saved) |
+| `false`         | absent   | `{ usage, text }` — last text part of the model output as-is |
+| `false`         | set      | `{ usage, structured }` — raw model output validated directly against `schema` (no `{ answer, context }` wrapper, no `context.md` write) |
+
+`POST /opencode/agent/md` (`type: "ai"`) and `POST /opencode/api` always
+return `{ usage, text }`.
 
 ```ts
 type Usage = {
@@ -181,6 +231,11 @@ type Usage = {
 type ApiReturn = {
   usage: Usage
   text: string
+}
+
+type ApiReturnStructured = {
+  usage: Usage
+  structured: unknown  // shape defined by the user-supplied `schema`
 }
 ```
 
@@ -231,12 +286,18 @@ curl -X POST http://localhost:3000/opencode/api \
   -H "Content-Type: application/json" \
   -H "username: alice" -H "password: pa55w0rd" \
   -d '{"model":"qwen3.7-plus","messages":[{"role":"user","content":[{"type":"text","text":"describe"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"<base64>"}}]}],"api_key":"sk-xxx"}'
+
+# agent run with structured output
+curl -X POST http://localhost:3000/opencode/agent \
+  -H "Content-Type: application/json" \
+  -H "username: alice" -H "password: pa55w0rd" \
+  -d '{"model":"kimi-k2.6","prompt":"Classify: I love this","schema":{"type":"object","properties":{"sentiment":{"type":"string","enum":["pos","neg","neu"]}},"required":["sentiment"],"additionalProperties":false},"schema_retries":3}'
 ```
 
 ## Scripts & storage
 
-`npm run` scripts: `init` · `start` · `typecheck` · `docker:up` · `docker:down` ·
-`docker:logs` · `docker:restart` · `docker:build`.
+`npm run` scripts: `init` · `start` · `typecheck` · `test` · `test:watch` ·
+`docker:up` · `docker:down` · `docker:logs` · `docker:restart` · `docker:build`.
 
 Data persistence:
 

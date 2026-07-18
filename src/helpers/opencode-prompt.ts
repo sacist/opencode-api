@@ -36,6 +36,7 @@ export function opencodePrompt(
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
+    schema_retries: number,
     system: string | undefined,
     update_context: true,
     userSchema: AnyJSONSchema,
@@ -47,6 +48,7 @@ export function opencodePrompt(
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
+    schema_retries: number,
     system: string | undefined,
     update_context: true,
     userSchema?: undefined,
@@ -58,6 +60,7 @@ export function opencodePrompt(
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
+    schema_retries: number,
     system: string | undefined,
     update_context: false,
     userSchema: AnyJSONSchema,
@@ -69,6 +72,7 @@ export function opencodePrompt(
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
+    schema_retries: number,
     system?: string,
     update_context?: false,
     userSchema?: undefined,
@@ -81,6 +85,7 @@ export async function opencodePrompt(
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
+    schema_retries: number = 3,
     system?: string,
     update_context?: boolean,
     userSchema?: AnyJSONSchema,
@@ -98,7 +103,7 @@ export async function opencodePrompt(
             format = {
                 type: 'json_schema',
                 schema,
-                retryCount: 3
+                retryCount: schema_retries
             }
         }
         if (update_context) {
@@ -107,7 +112,7 @@ export async function opencodePrompt(
             format = {
                 type: 'json_schema',
                 schema,
-                retryCount: 3
+                retryCount: schema_retries
             }
         }
 
@@ -119,6 +124,9 @@ export async function opencodePrompt(
             agent,
             parts
         })
+        console.log(data?.info);
+
+        console.log(data?.info.structured);
 
         if (error) {
             if ("_tag" in error && error._tag === 'InvalidRequestError') {

@@ -27,6 +27,7 @@ class OpencodeService {
         model: OpencodeGoModel,
         prompt: string,
         updateContext: boolean = true,
+        schema_retries: number,
         attachments?: ImageBlock[],
         schema?: AnyJSONSchema): Promise<ApiReturn | ApiReturnStructured> => {
 
@@ -45,14 +46,14 @@ class OpencodeService {
         }
         if (updateContext) {
             if (schema) {
-                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, true, schema)
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, schema_retries, basePromptAgent, true, schema)
                 const { answer, context } = data.json
 
                 fs.writeFile(contextMD, context, () => { })
 
                 return { usage: data.usage, structured: answer }
             } else {
-                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, true)
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, schema_retries, basePromptAgent, true)
 
                 const { answer, context } = data.json
 
@@ -62,10 +63,10 @@ class OpencodeService {
             }
         } else {
             if (schema) {
-                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, false, schema)
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, schema_retries, basePromptAgent, false, schema)
                 return { usage: data.usage, structured: data.json }
             }
-            const anwser = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent)
+            const anwser = await opencodePrompt(username, model, Agents.DEFAULT, parts, schema_retries, basePromptAgent)
             return anwser
         }
     }
@@ -175,6 +176,7 @@ class OpencodeService {
                     OpencodeGoModel.KIMI_K26,
                     Agents.DEFAULT,
                     parts,
+                    3,
                     basePromptWriterPrompt
                 )
 

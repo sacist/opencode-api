@@ -25,35 +25,52 @@ type ReturnStructuredWithUserSchema = {
     }
 }
 
-// Если передана схема но нет юзер схемы
-export function opencodePrompt(
-    username: string,
-    model: OpencodeGoModel,
-    agent: Agents,
-    parts: Parts,
-    system: string | undefined,
-    structured_output: true,
-    userSchema?: undefined,
-): Promise<ReturnStructuredNoUserSchema>
+type ReturnStructuredRaw = {
+    usage: Usage,
+    json: Record<string, unknown>
+}
 
+// update_context=true + userSchema (оборачивает в {answer, context})
 export function opencodePrompt(
     username: string,
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
     system: string | undefined,
-    structured_output: true,
+    update_context: true,
     userSchema: AnyJSONSchema,
 ): Promise<ReturnStructuredWithUserSchema>
 
-// Если схемы нет
+// update_context=true без userSchema
+export function opencodePrompt(
+    username: string,
+    model: OpencodeGoModel,
+    agent: Agents,
+    parts: Parts,
+    system: string | undefined,
+    update_context: true,
+    userSchema?: undefined,
+): Promise<ReturnStructuredNoUserSchema>
+
+// update_context=false + userSchema (raw json по userSchema)
+export function opencodePrompt(
+    username: string,
+    model: OpencodeGoModel,
+    agent: Agents,
+    parts: Parts,
+    system: string | undefined,
+    update_context: false,
+    userSchema: AnyJSONSchema,
+): Promise<ReturnStructuredRaw>
+
+// update_context=false (или не задан) + userSchema не задан
 export function opencodePrompt(
     username: string,
     model: OpencodeGoModel,
     agent: Agents,
     parts: Parts,
     system?: string,
-    structured_output?: undefined,
+    update_context?: false,
     userSchema?: undefined,
 ): Promise<ApiReturn>
 
@@ -65,7 +82,7 @@ export async function opencodePrompt(
     agent: Agents,
     parts: Parts,
     system?: string,
-    structured_output?: true,
+    update_context?: boolean,
     userSchema?: AnyJSONSchema,
 ): Promise<unknown> {
     const client = getOpencodeClient()
@@ -74,8 +91,18 @@ export async function opencodePrompt(
     try {
         let format: OutputFormat | undefined
         let validate
-        if (structured_output) {
-            const schema = constructSchema(userSchema)
+        let schema
+        if (update_context === false && userSchema) {
+            schema = userSchema
+            validate = getValidatorJSONSchema(schema)
+            format = {
+                type: 'json_schema',
+                schema,
+                retryCount: 3
+            }
+        }
+        if (update_context) {
+            schema = constructSchema(userSchema)
             validate = getValidatorJSONSchema(schema)
             format = {
                 type: 'json_schema',
@@ -107,7 +134,7 @@ export async function opencodePrompt(
             output_tokens: data.info.tokens.output,
             cost: JSON.stringify(data.info.cost)
         }
-        if (structured_output) {
+        if (update_context) {
             const structured = data.info.structured
             const valid = validate!(structured)
             if (!valid) {
@@ -115,6 +142,15 @@ export async function opencodePrompt(
             }
             return { usage, json: structured }
 
+        }
+
+        if (userSchema) {
+            const structured = data.info.structured
+            const valid = validate!(structured)
+            if (!valid) {
+                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель' })
+            }
+            return { usage, json: structured as Record<string, unknown> }
         }
 
         const text = data.parts

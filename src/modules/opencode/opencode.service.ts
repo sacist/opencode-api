@@ -61,6 +61,10 @@ class OpencodeService {
                 return { usage: data.usage, text: answer }
             }
         } else {
+            if (schema) {
+                const data = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent, false, schema)
+                return { usage: data.usage, structured: data.json }
+            }
             const anwser = await opencodePrompt(username, model, Agents.DEFAULT, parts, basePromptAgent)
             return anwser
         }

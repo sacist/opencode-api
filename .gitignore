@@ -10,3 +10,5 @@ opencode.json
 TODO
 src/scripts/test.ts
 *.jpg
+__tests__
+vitest.config.ts

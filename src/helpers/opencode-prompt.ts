@@ -124,9 +124,6 @@ export async function opencodePrompt(
             agent,
             parts
         })
-        console.log(data?.info);
-
-        console.log(data?.info.structured);
 
         if (error) {
             if ("_tag" in error && error._tag === 'InvalidRequestError') {

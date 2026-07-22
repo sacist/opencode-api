@@ -143,7 +143,7 @@ export async function opencodePrompt(
             const structured = data.info.structured
             const valid = validate!(structured)
             if (!valid) {
-                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель' })
+                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель', error: data.info.error })
             }
             return { usage, json: structured }
 
@@ -153,7 +153,7 @@ export async function opencodePrompt(
             const structured = data.info.structured
             const valid = validate!(structured)
             if (!valid) {
-                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель' })
+                throw new ValidationError({ reason: 'Модель не смогла вернуть валидный json. Попробуйте ещё раз, либо используйте другую модель', error: data.info.error })
             }
             return { usage, json: structured as Record<string, unknown> }
         }
@@ -163,7 +163,7 @@ export async function opencodePrompt(
             .at(-1)?.text
 
         if (!text) {
-            throw new ValidationError({ reason: 'Модель не вернула текст' })
+            throw new ValidationError({ reason: 'Модель не вернула текст', error: data.info.error })
         }
         return { usage, text }
     } finally {

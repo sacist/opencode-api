@@ -12,6 +12,9 @@ export enum OpencodeGoModel {
     DEEPSEEK_V4_FLASH = "deepseek-v4-flash",
     MIMO_V25 = "mimo-v2.5",
     MIMO_V25_PRO = "mimo-v2.5-pro",
+    BIG_PICKLE = 'big-pickle',
+    GROK_45 = 'grok-4.5',
+    KIMI_K3 = 'kimi-k3'
 }
 
 export type ImageBlock = {
